@@ -47,7 +47,15 @@ public class FaturaReminderWorker : BackgroundService
         var clienteRepository = scope.ServiceProvider.GetRequiredService<IClienteRepository>();
         var evolutionApi = scope.ServiceProvider.GetRequiredService<IEvolutionApiClient>();
 
-        // Busca todas as faturas Pendentes (Sem Specification elaborada pra simplificar o MVP)
+        // 1. Verificar Status da Instância antes de tudo
+        var statusResult = await evolutionApi.ObterStatusAsync(cancellationToken);
+        if (!statusResult.IsSuccess || statusResult.Value != "open")
+        {
+            _logger.LogWarning($"[WHATSAPP] Os disparos foram ignorados porque a instância não está conectada (Status atual: {statusResult.Value ?? "Não Encontrada"}).");
+            return;
+        }
+
+        // 2. Busca todas as faturas Pendentes
         var faturas = await faturaRepository.ListAsync(cancellationToken);
         var faturasPendentes = faturas.Where(f => f.Status == StatusFatura.Pendente).ToList();
 
@@ -57,9 +65,16 @@ public class FaturaReminderWorker : BackgroundService
             return;
         }
 
+        var random = new Random();
         foreach (var fatura in faturasPendentes)
         {
+            // Proteção Anti-Ban: Delay aleatório entre 10 e 25 segundos
+            var delay = random.Next(10000, 25000);
+            _logger.LogInformation($"[ANTI-BAN] Aguardando {delay/1000}s antes de enviar fatura {fatura.Id}...");
+            await Task.Delay(delay, cancellationToken);
+
             var cliente = await clienteRepository.GetByIdAsync(fatura.ClienteId, cancellationToken);
+
             
             if (cliente == null || !cliente.Ativo) continue;
 
