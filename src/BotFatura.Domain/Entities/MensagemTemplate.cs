@@ -6,7 +6,7 @@ namespace BotFatura.Domain.Entities;
 
 public class MensagemTemplate : Entity
 {
-    public string TextoBase { get; private set; }
+    public string TextoBase { get; private set; } = null!;
     
     // Indica se é o template padrão do sistema
     public bool IsPadrao { get; private set; }
