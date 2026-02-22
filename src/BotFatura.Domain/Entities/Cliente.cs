@@ -1,0 +1,42 @@
+using Ardalis.GuardClauses;
+using Ardalis.Result;
+using BotFatura.Domain.Common;
+
+namespace BotFatura.Domain.Entities;
+
+public class Cliente : Entity
+{
+    public string NomeCompleto { get; private set; }
+    public string WhatsApp { get; private set; }
+    public bool Ativo { get; private set; }
+
+    // Construtor protegido usado apenas via Factory ou EF Core
+    protected Cliente() { }
+
+    public Cliente(string nomeCompleto, string whatsApp)
+    {
+        NomeCompleto = Guard.Against.NullOrWhiteSpace(nomeCompleto, nameof(nomeCompleto));
+        WhatsApp = Guard.Against.NullOrWhiteSpace(whatsApp, nameof(whatsApp));
+        Ativo = true;
+    }
+
+    public Result AtualizarTelefone(string novoWhatsApp)
+    {
+        WhatsApp = Guard.Against.NullOrWhiteSpace(novoWhatsApp, nameof(novoWhatsApp));
+        return Result.Success();
+    }
+
+    public Result Desativar()
+    {
+        if (!Ativo) return Result.Error("Cliente já está desativado.");
+        Ativo = false;
+        return Result.Success();
+    }
+
+    public Result Ativar()
+    {
+        if (Ativo) return Result.Error("Cliente já está ativo.");
+        Ativo = true;
+        return Result.Success();
+    }
+}
