@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: botfatura-postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: adminpassword
+      POSTGRES_DB: botfatura_db
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: botfatura-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@botfatura.com
+      PGADMIN_DEFAULT_PASSWORD: adminpassword
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    container_name: botfatura-redis
+    ports:
+      - "6379:6379"
+    restart: always
+
+  evolution-api:
+    image: atendai/evolution-api:latest
+    container_name: botfatura-evolution
+    ports:
+      - "8080:8080"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    environment:
+      - SERVER_URL=http://localhost:8080
+      - AUTHENTICATION_API_KEY=botfatura-secreta-123
+      - DATABASE_PROVIDER=postgresql
+      - DATABASE_CONNECTION_URI=postgresql://admin:adminpassword@postgres:5432/botfatura_db?schema=public
+      - DATABASE_CONNECTION_CLIENT_NAME=botfatura_worker
+      - CACHE_REDIS_ENABLED=true
+      - CACHE_REDIS_URI=redis://redis:6379
+      - REDIS_URI=redis://redis:6379
+      - CACHE_REDIS_PREFIX_KEY=evolution
+      - CONFIG_SESSION_PHONE_CLIENT=BotFatura API
+      - CONFIG_SESSION_PHONE_NAME=Chrome
+      - CONFIG_SESSION_PHONE_VERSION=2.3000.1033851049
+      - DEL_INSTANCE=false
+    depends_on:
+      - redis
+      - postgres
+    restart: always
+
+volumes:
+  postgres_data:
