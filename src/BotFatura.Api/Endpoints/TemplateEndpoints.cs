@@ -1,4 +1,6 @@
 using BotFatura.Application.Templates.Queries.ObterPreviewMensagem;
+using BotFatura.Application.Templates.Queries.ListarTemplates;
+using BotFatura.Application.Templates.Commands.AtualizarTemplate;
 using Carter;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -13,10 +15,27 @@ public class TemplateEndpoints : ICarterModule
     {
         var group = app.MapGroup("/api/templates").WithTags("Templates");
 
-        group.MapPost("/preview", async (ObterPreviewMensagemQuery query, IMediator mediator) =>
+        group.MapGet("/", async (ISender sender) =>
         {
-            var result = await mediator.Send(query);
+            var result = await sender.Send(new ListarTemplatesQuery());
+            return Results.Ok(result.Value);
+        })
+        .WithSummary("Lista todos os templates de mensagem.");
+
+        group.MapPut("/{id:guid}", async (Guid id, AtualizarTemplateCommand command, ISender sender) =>
+        {
+            if (id != command.Id) return Results.BadRequest("ID no corpo difere do ID da rota.");
+            
+            var result = await sender.Send(command);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Errors);
+        })
+        .WithSummary("Atualiza o texto de um template.");
+
+        group.MapPost("/preview", async (ObterPreviewMensagemQuery query, ISender sender) =>
+        {
+            var result = await sender.Send(query);
             return result.IsSuccess ? Results.Ok(new { preview = result.Value }) : Results.BadRequest(result.Errors);
-        });
+        })
+        .WithSummary("Gera uma prévia da mensagem com dados fictícios.");
     }
 }

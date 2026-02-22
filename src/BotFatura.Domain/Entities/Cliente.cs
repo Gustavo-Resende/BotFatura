@@ -20,7 +20,15 @@ public class Cliente : Entity
         Ativo = true;
     }
 
+    public Result AtualizarDados(string nomeCompleto, string whatsApp)
+    {
+        NomeCompleto = Guard.Against.NullOrWhiteSpace(nomeCompleto, nameof(nomeCompleto));
+        WhatsApp = Guard.Against.NullOrWhiteSpace(whatsApp, nameof(whatsApp));
+        return Result.Success();
+    }
+
     public Result AtualizarTelefone(string novoWhatsApp)
+
     {
         WhatsApp = Guard.Against.NullOrWhiteSpace(novoWhatsApp, nameof(novoWhatsApp));
         return Result.Success();

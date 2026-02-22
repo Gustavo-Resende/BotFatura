@@ -1,6 +1,10 @@
 using Ardalis.Result;
 using BotFatura.Application.Clientes.Commands.CadastrarCliente;
+using BotFatura.Application.Clientes.Commands.AtualizarCliente;
+using BotFatura.Application.Clientes.Commands.ExcluirCliente;
 using BotFatura.Application.Clientes.Queries.ObterClientePorId;
+using BotFatura.Application.Clientes.Queries.ListarClientes;
+
 using Carter;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -38,6 +42,13 @@ public class ClientesEndpoint : ICarterModule
             return Results.BadRequest(result.Errors);
         });
 
+        group.MapGet("/", async (ISender sender) =>
+        {
+            var result = await sender.Send(new ListarClientesQuery());
+            return Results.Ok(result.Value);
+        })
+        .WithSummary("Lista todos os clientes cadastrados.");
+
         group.MapGet("/{id:guid}", async (Guid id, ISender sender) =>
         {
             var query = new ObterClienteQuery(id);
@@ -54,6 +65,24 @@ public class ClientesEndpoint : ICarterModule
             }
 
             return Results.BadRequest(result.Errors);
-        });
+        })
+        .WithSummary("Obtém os detalhes de um cliente específico.");
+
+        group.MapPut("/{id:guid}", async (Guid id, AtualizarClienteCommand command, ISender sender) =>
+        {
+            if (id != command.Id) return Results.BadRequest("ID no corpo difere do ID da rota.");
+            
+            var result = await sender.Send(command);
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Errors);
+        })
+        .WithSummary("Atualiza os dados de um cliente.");
+
+        group.MapDelete("/{id:guid}", async (Guid id, ISender sender) =>
+        {
+            var result = await sender.Send(new ExcluirClienteCommand(id));
+            return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Errors);
+        })
+        .WithSummary("Desativa um cliente do sistema.");
+
     }
 }

@@ -11,6 +11,10 @@ public class Fatura : Entity
     public decimal Valor { get; private set; }
     public DateTime DataVencimento { get; private set; }
     public StatusFatura Status { get; private set; }
+    
+    // Navegação
+    public Cliente Cliente { get; private set; } = null!;
+
 
     protected Fatura() { }
 
