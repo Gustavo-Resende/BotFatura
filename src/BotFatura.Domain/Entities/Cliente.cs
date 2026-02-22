@@ -6,8 +6,8 @@ namespace BotFatura.Domain.Entities;
 
 public class Cliente : Entity
 {
-    public string NomeCompleto { get; private set; }
-    public string WhatsApp { get; private set; }
+    public string NomeCompleto { get; private set; } = null!;
+    public string WhatsApp { get; private set; } = null!;
     public bool Ativo { get; private set; }
 
     // Construtor protegido usado apenas via Factory ou EF Core
