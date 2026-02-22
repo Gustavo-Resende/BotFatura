@@ -1,5 +1,7 @@
 using Ardalis.Result;
 using BotFatura.Application.Faturas.Commands.ConfigurarCobranca;
+using BotFatura.Application.Faturas.Commands.EnviarFaturaWhatsApp;
+
 using Carter;
 using MediatR;
 using Microsoft.AspNetCore.Builder;
@@ -40,5 +42,26 @@ public class FaturasEndpoint : ICarterModule
 
             return Results.BadRequest(result.Errors);
         });
+
+        group.MapPost("/{id:guid}/enviar", async (Guid id, ISender sender) =>
+
+        {
+            var result = await sender.Send(new EnviarFaturaWhatsAppCommand(id));
+
+            if (result.IsSuccess)
+            {
+                return Results.Ok(new { message = "Fatura enviada com sucesso para o WhatsApp." });
+            }
+
+            if (result.Status == ResultStatus.NotFound)
+            {
+                return Results.NotFound(result.Errors);
+            }
+
+            return Results.BadRequest(result.Errors);
+        })
+        .WithName("EnviarFatura")
+        .WithSummary("Dispara manualmente a cobrança da fatura via WhatsApp");
     }
 }
+
