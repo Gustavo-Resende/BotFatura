@@ -25,7 +25,6 @@ public class EvolutionApiClient : IEvolutionApiClient
 
     public async Task<Result> EnviarMensagemAsync(string numeroWhatsApp, string texto, CancellationToken cancellationToken = default)
     {
-        // O payload padrão do webhook POST /message/sendText/{instance}
         var payload = new 
         {
             number = numeroWhatsApp,
@@ -41,5 +40,77 @@ public class EvolutionApiClient : IEvolutionApiClient
 
         var errorResponse = await response.Content.ReadAsStringAsync(cancellationToken);
         return Result.Error($"Falha na api do Whatsapp: {response.StatusCode} - {errorResponse}");
+    }
+
+    public async Task<Result<string>> ObterStatusAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var response = await _httpClient.GetAsync($"/instance/connectionState/{_instanceName}", cancellationToken);
+            
+            if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
+                return Result.Success("INSTANCE_NOT_FOUND");
+
+            if (!response.IsSuccessStatusCode)
+                return Result.Error("Ocorreu um erro ao consultar o status na Evolution API.");
+
+            var data = await response.Content.ReadFromJsonAsync<InstanceStatusResponse>(cancellationToken);
+            return Result.Success(data?.Instance?.State ?? "UNKNOWN");
+        }
+        catch (Exception ex)
+        {
+            return Result.Error($"Erro de comunicação: {ex.Message}");
+        }
+    }
+
+    public async Task<Result<string>> GerarQrCodeAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.GetAsync($"/instance/connect/{_instanceName}", cancellationToken);
+        
+        if (!response.IsSuccessStatusCode)
+            return Result.Error("Não foi possível gerar o QR Code. Verifique se a instância está ativa.");
+
+        var data = await response.Content.ReadFromJsonAsync<QrCodeResponse>(cancellationToken);
+        return Result.Success(data?.Base64 ?? string.Empty);
+    }
+
+    public async Task<Result> CriarInstanciaAsync(CancellationToken cancellationToken = default)
+    {
+        var payload = new 
+        {
+            instanceName = _instanceName,
+            token = _apiKey,
+            qrcode = true,
+            integration = "WHATSAPP-BAILEYS"
+        };
+
+        var response = await _httpClient.PostAsJsonAsync("/instance/create", payload, cancellationToken);
+        
+        if (response.IsSuccessStatusCode) return Result.Success();
+
+        var error = await response.Content.ReadAsStringAsync(cancellationToken);
+        return Result.Error($"Erro ao criar instância: {error}");
+    }
+
+    public async Task<Result> DesconectarAsync(CancellationToken cancellationToken = default)
+    {
+        var response = await _httpClient.DeleteAsync($"/instance/logout/{_instanceName}", cancellationToken);
+        return response.IsSuccessStatusCode ? Result.Success() : Result.Error("Erro ao desconectar instância.");
+    }
+
+    // Classes auxiliares para desserialização
+    private class InstanceStatusResponse
+    {
+        public InstanceData? Instance { get; set; }
+    }
+
+    private class InstanceData
+    {
+        public string? State { get; set; }
+    }
+
+    private class QrCodeResponse
+    {
+        public string? Base64 { get; set; }
     }
 }
