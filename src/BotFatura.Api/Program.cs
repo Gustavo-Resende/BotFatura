@@ -3,7 +3,11 @@ using BotFatura.Infrastructure;
 using Carter;
 using Microsoft.EntityFrameworkCore;
 
+// Corrigir erro de DateTime no Npgsql/PostgreSQL
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
+
 
 // Adicionar suporte a configurações locais (Local.json) que não vão para o Git
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
@@ -11,7 +15,16 @@ builder.Configuration.AddEnvironmentVariables();
 
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
+builder.Services.AddSwaggerGen(c =>
+{
+    var apiXmlFile = $"{System.Reflection.Assembly.GetExecutingAssembly().GetName().Name}.xml";
+    var apiXmlPath = Path.Combine(AppContext.BaseDirectory, apiXmlFile);
+    c.IncludeXmlComments(apiXmlPath);
+
+    var appXmlFile = "BotFatura.Application.xml";
+    var appXmlPath = Path.Combine(AppContext.BaseDirectory, appXmlFile);
+    c.IncludeXmlComments(appXmlPath);
+});
 
 // Injecting Layers
 builder.Services.AddApplicationServices();
