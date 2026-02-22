@@ -45,21 +45,30 @@ docker-compose up -d
 O Docker Compose lerá as variáveis automaticamente do seu arquivo `.env`.
 
 ### Passo 3: Configurar a Evolution API
-1. Acesse o painel da sua Evolution API (porta 8080).
-2. Crie uma instância chamada `BotFatura`.
-3. Escaneie o QR Code com o WhatsApp que fará os disparos.
+O sistema já está configurado para gerenciar a instância automaticamente.
+1. Acesse o endpoint `GET /api/whatsapp/conectar` via Swagger.
+2. Escaneie o QR Code retornado. O sistema gerenciará o refresh do código caso ele expire.
 
 ### Passo 4: Rodar o Backend
 ```bash
-dotnet run --project src/BotFatura.Api/BotFatura.Api.csproj
+dotnet watch --project src/BotFatura.Api/BotFatura.Api.csproj
 ```
 A API estará disponível em `http://localhost:5188/swagger`.
 
+## ✨ Funcionalidades do MVP
+- **Gestão de Clientes**: Cadastro e consulta de clientes ativos.
+- **Configuração de Cobranças**: Definição de valores e datas de vencimento.
+- **WhatsApp Integrado**: Conexão simplificada via QR Code com auto-gerenciamento de instância.
+- **Disparos Automáticos**: Worker em background que processa cobranças diariamente.
+- **Disparo Manual**: Rota dedicada para envio imediato de faturas sob demanda.
+- **Proteção Anti-Ban**: Delays aleatórios inteligentes implementados tanto no Worker quanto nos envios manuais para mimetizar comportamento humano.
+
 ## 📈 Roadmap / Próximos Passos
-- [ ] Implementação de rotas para Dashboard financeiro.
+- [x] Implementação de rotas para Dashboard financeiro (Resumo e Atrasados).
 - [ ] Integração com gateways de pagamento (Pix/Boleto).
 - [ ] Sistema de Webhooks para confirmação de leitura.
-- [ ] Expansão dos templates de mensagem dinâmicos.
+- [ ] Interface Frontend (React/Next.js) para gestão simplificada.
+
 
 ## ⚖️ Licença
 Este projeto é para fins de estudo e implementação de MVP. Sinta-se à vontade para contribuir ou sugerir alterações!
