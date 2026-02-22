@@ -5,11 +5,11 @@ services:
     image: postgres:16-alpine
     container_name: botfatura-postgres
     environment:
-      POSTGRES_USER: admin
-      POSTGRES_PASSWORD: adminpassword
-      POSTGRES_DB: botfatura_db
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
     ports:
-      - "5433:5432"
+      - "${DB_PORT_EXTERNAL}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: unless-stopped
@@ -18,8 +18,8 @@ services:
     image: dpage/pgadmin4
     container_name: botfatura-pgadmin
     environment:
-      PGADMIN_DEFAULT_EMAIL: admin@botfatura.com
-      PGADMIN_DEFAULT_PASSWORD: adminpassword
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
     ports:
       - "5050:80"
     depends_on:
@@ -30,7 +30,7 @@ services:
     image: redis:alpine
     container_name: botfatura-redis
     ports:
-      - "6379:6379"
+      - "${REDIS_PORT}:6379"
     restart: always
 
   evolution-api:
@@ -42,10 +42,10 @@ services:
       - 8.8.8.8
       - 8.8.4.4
     environment:
-      - SERVER_URL=http://localhost:8080
-      - AUTHENTICATION_API_KEY=botfatura-secreta-123
+      - SERVER_URL=${EVOLUTION_BASE_URL}
+      - AUTHENTICATION_API_KEY=${EVOLUTION_API_KEY}
       - DATABASE_PROVIDER=postgresql
-      - DATABASE_CONNECTION_URI=postgresql://admin:adminpassword@postgres:5432/botfatura_db?schema=public
+      - DATABASE_CONNECTION_URI=postgresql://${DB_USER}:${DB_PASSWORD}@postgres:5432/${DB_NAME}?schema=public
       - DATABASE_CONNECTION_CLIENT_NAME=botfatura_worker
       - CACHE_REDIS_ENABLED=true
       - CACHE_REDIS_URI=redis://redis:6379
