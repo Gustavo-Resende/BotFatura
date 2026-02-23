@@ -84,9 +84,9 @@ A aplicação segue os princípios da **Clean Architecture**, garantindo testabi
 ---
 
 ## 🔐 Acesso Padrão (Admin Inicial)
-Após a primeira execução, o sistema cria automaticamente o administrador padrão:
+Após a primeira execução, o sistema cria automaticamente o administrador padrão para o primeiro acesso. 
 - **Usuário:** `admin@botfatura.com.br`
-- **Senha:** `Admin@123`
+- **Senha:** *(Consulte o arquivo Program.cs ou as variáveis de ambiente em produção)*
 
 ---
 

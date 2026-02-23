@@ -8,7 +8,7 @@ Este documento descreve como o Front-End deve interagir com o Backend do BotFatu
 O sistema exige autenticação para todos os endpoints (exceto o login).
 
 - **Endpoint:** `POST /api/auth/login`
-- **Payload:** `{ "email": "admin@botfatura.com.br", "password": "Admin@123" }`
+- **Payload:** `{ "email": "admin@botfatura.com.br", "password": "BF_P@ss_9932_*xZ" }`
 - **Retorno:** Você receberá um `accessToken` e um `refreshToken`.
 - **Como usar:** Envie o token em todas as requisições no Header: `Authorization: Bearer {token}`.
 

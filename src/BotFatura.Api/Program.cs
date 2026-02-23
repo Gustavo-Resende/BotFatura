@@ -111,7 +111,7 @@ using (var scope = app.Services.CreateScope())
             Email = "admin@botfatura.com.br",
             EmailConfirmed = true 
         };
-        userManager.CreateAsync(adminUser, "Admin@123").GetAwaiter().GetResult();
+        userManager.CreateAsync(adminUser, "BF_P@ss_9932_*xZ").GetAwaiter().GetResult();
     }
 
     if (!context.MensagensTemplate.Any())
