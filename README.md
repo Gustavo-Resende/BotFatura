@@ -1,74 +1,28 @@
 # BotFatura 🤖💰
 
-> **Status do Projeto: 🚧 Em Desenvolvimento Ativo (WIP)**
-> 
-> *Nota: Este projeto é um MVP funcional, mas possui uma margem ampla para alterações estruturais. Novas rotas, entidades e integrações estão sendo implementadas continuamente conforme a evolução das necessidades de negócio.*
+> **Status do Projeto: 🚀 Finalizando MVP (Backend)**
 
-O **BotFatura** é um sistema automatizado de cobrança e lembretes via WhatsApp. Ele monitora faturas pendentes e utiliza a **Evolution API** para disparar mensagens personalizadas aos clientes, garantindo que o ciclo de pagamento seja mantido de forma eficiente e modernizada.
+Sistema automatizado de gestão de cobranças via WhatsApp. O **BotFatura** conecta sua empresa aos seus clientes da forma mais simples possível: avisando sobre faturas, lembrando ganhos de prazo e auditando cada conversa.
+
+## ✨ Funcionalidades Principais
+- **Segurança Total:** Acesso restrito via autenticação JWT.
+- **Régua de Cobrança:**
+  - Lembrete Amigável (3 dias antes).
+  - Cobrança Direta (No dia do vencimento).
+- **Prova de Envio:** Auditoria completa e logs de cada mensagem disparada.
+- **Dashboard:** Visão rápida de faturas pendentes, pagas e atrasadas.
+- **Conexão Simples:** Gerenciamento de WhatsApp via QR Code direto na API.
 
 ## 🏗️ Arquitetura
-O projeto foi construído seguindo os princípios da **Clean Architecture** (Arquitetura Limpa), visando desacoplamento, testabilidade e facilidade de manutenção:
+Projeto em **.NET 8** seguindo **Clean Architecture**, garantindo código limpo e fácil manutenção.
 
-- **Domain**: Entidades de negócio, Enums e interfaces base. (Independente de frameworks).
-- **Application**: Lógica de aplicação, Casos de Uso (Commands/Queries) utilizando **MediatR**, validações com **FluentValidation** e mapeamento de dados.
-- **Infrastructure**: Implementação de persistência com **EF Core**, integrações com APIs externas (Evolution API) e configurações de banco de dados (PostgreSQL).
-- **Presentation (Web API)**: Endpoints desacoplados utilizando **Carter**, Background Workers para processamento em segundo plano e documentação com Swagger.
-
-## 🛠️ Tecnologias Utilizadas
-- **.NET 8** (C#)
-- **PostgreSQL** (Banco de dados relacional)
-- **Redis** (Cache e controle de sessão para o WhatsApp)
-- **Docker & Docker Compose** (Orquestração de ambiente)
-- **Evolution API** (Integração com WhatsApp)
-- **MediatR** (Padrão CQRS)
-- **FluentValidation** (Validação de entrada)
-- **Ardalis.Specification** (Padrão de consulta)
+## 🛠️ Tecnologias
+- **PostgreSQL** para persistência de dados.
+- **Evolution API** para integração com WhatsApp.
+- **MediatR** para organização de comandos e consultas.
 
 ## 🚀 Como Executar
-
-### Pré-requisitos
-- Docker Desktop instalado.
-- SDK do .NET 8 instalado.
-
-### Passo 1: Configurar Variáveis de Ambiente
-1. Copie o arquivo de exemplo:
-   ```bash
-   cp .env.example .env
-   ```
-2. Edite o `.env` e defina suas senhas e chaves de API.
-
-### Passo 2: Subir a Infraestrutura
-Na raiz do projeto, execute:
-```bash
-docker-compose up -d
-```
-O Docker Compose lerá as variáveis automaticamente do seu arquivo `.env`.
-
-### Passo 3: Configurar a Evolution API
-O sistema já está configurado para gerenciar a instância automaticamente.
-1. Acesse o endpoint `GET /api/whatsapp/conectar` via Swagger.
-2. Escaneie o QR Code retornado. O sistema gerenciará o refresh do código caso ele expire.
-
-### Passo 4: Rodar o Backend
-```bash
-dotnet watch --project src/BotFatura.Api/BotFatura.Api.csproj
-```
-A API estará disponível em `http://localhost:5188/swagger`.
-
-## ✨ Funcionalidades do MVP
-- **Gestão de Clientes**: Cadastro e consulta de clientes ativos.
-- **Configuração de Cobranças**: Definição de valores e datas de vencimento.
-- **WhatsApp Integrado**: Conexão simplificada via QR Code com auto-gerenciamento de instância.
-- **Disparos Automáticos**: Worker em background que processa cobranças diariamente.
-- **Disparo Manual**: Rota dedicada para envio imediato de faturas sob demanda.
-- **Proteção Anti-Ban**: Delays aleatórios inteligentes implementados tanto no Worker quanto nos envios manuais para mimetizar comportamento humano.
-
-## 📈 Roadmap / Próximos Passos
-- [x] Implementação de rotas para Dashboard financeiro (Resumo e Atrasados).
-- [ ] Integração com gateways de pagamento (Pix/Boleto).
-- [ ] Sistema de Webhooks para confirmação de leitura.
-- [ ] Interface Frontend (React/Next.js) para gestão simplificada.
-
-
-## ⚖️ Licença
-Este projeto é para fins de estudo e implementação de MVP. Sinta-se à vontade para contribuir ou sugerir alterações!
+1. Configure seu `.env` com as chaves necessárias.
+2. Suba o ambiente: `docker-compose up -d`.
+3. Rode a aplicação: `dotnet watch --project src/BotFatura.Api`.
+4. Acesse `/swagger` para gerenciar seus clientes e faturas.

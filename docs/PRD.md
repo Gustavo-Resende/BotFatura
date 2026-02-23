@@ -1,39 +1,39 @@
 # BotFatura - Product Requirements Document (PRD)
 
 ## Objetivo
-Criar um MVP (Minimum Viable Product) de um sistema automatizado para envio de mensagens de cobrança via WhatsApp para clientes recorrentes. O foco é solucionar a dor de uma agência que precisa cobrar de 3 a 5 clientes todos os meses. Inicialmente focado na construção de um Back-End robusto.
+Criar um sistema de gestão de cobranças via WhatsApp focado em agilidade e conformidade. O sistema automatiza o envio de lembretes de faturas para clientes recorrentes, garantindo segurança no acesso e auditoria completa de todas as notificações enviadas. O foco é um MVP funcional onde a baixa de pagamentos permanece manual (conferência direta no extrato), mas o fluxo de comunicação é 100% automatizado e auditável.
 
 ## Arquitetura e Tecnologias
-- **Linguagem/Framework:** C# .NET 8 (Web API).
-- **Arquitetura de Software:** Clean Architecture com CQRS.
-  - *Domain:* Entidades ricas, Interfaces de Repositório, Especificações (Ardalis.Specification).
-  - *Application:* Casos de Uso orquestrados via **MediatR**, separando Commands de Queries. Uso de DTOs para entrada/saída.
-  - *Infrastructure:* EF Core (PostgreSQL) com suporte a Legacy Timestamp para compatibilidade de datas.
-  - *Presentation (API):* **Minimal APIs** utilizando a biblioteca **Carter** para organização de rotas. Documentação automática via Swagger com XML Comments.
-- **Banco de Dados:** PostgreSQL 16 (Docker).
-- **Mensageria:** Evolution API v2 (Baileys) rodando via Docker.
+- **Sessão Tecnológica:** C# .NET 8 (Clean Architecture + CQRS).
+- **Persistência:** PostgreSQL 16 via EF Core.
+- **WhatsApp:** Evolution API v2 (Integração Baileys).
+- **Segurança:** ASP.NET Core Identity + JWT Bearer.
+- **Auditoria:** Registro em banco de dados para cada mensagem processada.
 
-## Premissas de Funcionamento
-1. A API C# roda localmente acessando o Docker via porta mapeada (`localhost:5433`).
-2. O sistema gerencia automaticamente a criação de instâncias na Evolution API caso não existam.
+## Casos de Uso (Final de MVP)
 
-## Casos de Uso Principais (MVP)
-1. **Cadastrar Cliente:** Nome completo e número de WhatsApp.
-2. **Configurar Cobrança:** Definir valor e vencimento vinculados ao cliente.
-3. **Configurar Mensagem Template:** Cadastrar o texto base com variáveis (`{NomeCliente}`, `{Valor}`, `{Vencimento}`).
-4. **Gerenciamento de Instância:** Dashboard simplificado para conexão via QR Code com auto-refresh.
-5. **Disparo Automático:** Worker em background (`FaturaReminderWorker`) para varredura diária.
-6. **Disparo Manual:** Rota para envio imediato de cobrança de uma fatura específica.
+### 🔐 Segurança (Acesso Restrito)
+1. **Login de Admin:** Apenas usuários autenticados via JWT podem acessar as funções de Dashboard, Clientes e Faturas.
 
-## Fases de Desenvolvimento (Back-End)
-- [x] **Fase 1:** Setup da documentação base, regras e Docker-Compose.
-- [x] **Fase 2:** Estruturação da Solução C# (Clean Architecture).
-- [x] **Fase 3:** Setup de Bibliotecas Core (MediatR, CQRS, Carter, EF Core).
-- [x] **Fase 4:** Camada de Domínio (Entities e Interfaces).
-- [x] **Fase 5:** Camada de Infraestrutura e Application (Handlers, Repositórios).
-- [ ] **Fase 6:** Testes de Unidade (Foco em cenários USB).
-- [x] **Fase 7:** Presentation (Minimal APIs endpoints).
-- [x] **Fase 8:** Worker e Integração com Evolution API (Conexão e Disparo).
-- [x] **Fase 9:** Ajustes de Usabilidade (QR Code Refresh e Documentação Swagger).
+### 📢 Notificações Automatizadas
+1. **Lembrete Antecipado:** Envio automático de mensagem 3 dias antes do vencimento.
+2. **Cobrança no Dia:** Envio automático no dia do vencimento.
+3. **Disparo Manual:** Possibilidade de reenviar uma fatura específica a qualquer momento.
+4. **Proteção Anti-Ban:** Delays inteligentes para mimetizar comportamento humano.
 
-> **Consulta Frequente:** Este arquivo deve ser relido frequentemente pelo Assistente de IA assim que o contexto ou janelas forem resetadas, mantendo em mente as fases restantes e o foco de Clean Architecture do MVP.
+### 📋 Auditoria e Gestão
+1. **Log de Envios:** Registro histórico de cada tentativa de envio (Data, Hora, Status, Conteúdo).
+2. **Gestão Manual:** Marcar faturas como "Pagas" ou "Canceladas" manualmente via interface.
+
+## Roadmap de Lançamento (Finalização do Backend)
+
+- [x] **Fase 1:** Core do Sistema (Clientes, Faturas, Templates).
+- [x] **Fase 2:** Integração WhatsApp e Worker de Envio.
+- [x] **Fase 3:** Refatoração de Rotas e Dashboard.
+- [ ] **Fase 4: Segurança (JWT):** Implementar login e proteção de endpoints.
+- [ ] **Fase 5: Auditoria:** Criar histórico de disparos no banco de dados.
+- [ ] **Fase 6: Lembrete Inteligente:** Implementar o envio automático antecipado (3 dias).
+- [ ] **Fase 7: Polimento Final:** XML documentation completa e limpeza de código.
+
+---
+> **Foco:** Simplicidade, Segurança e Prova de Envio.
