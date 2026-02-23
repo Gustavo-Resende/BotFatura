@@ -25,23 +25,23 @@ public class FaturaReminderWorker : BackgroundService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            _logger.LogInformation("Worker rodando: Procurando faturas pendentes...");
+            // Processamento diário (simulado para rodar a cada 1 hora para testes, mas lógica baseada em datas)
+            _logger.LogInformation("Iniciando processamento da régua de cobrança...");
 
             try
             {
-                await ProcessarFaturasPendentesAsync(stoppingToken);
+                await ProcessarReguaCobrancaAsync(stoppingToken);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Erro fatal ao processar faturas pendentes.");
+                _logger.LogError(ex, "Erro ao processar régua de cobrança.");
             }
 
-            // Aguarda 5 minutos antes da proxima varredura
-            await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
+            await Task.Delay(TimeSpan.FromHours(1), stoppingToken);
         }
     }
 
-    private async Task ProcessarFaturasPendentesAsync(CancellationToken cancellationToken)
+    private async Task ProcessarReguaCobrancaAsync(CancellationToken cancellationToken)
     {
         using var scope = _serviceProvider.CreateScope();
         var faturaRepository = scope.ServiceProvider.GetRequiredService<IFaturaRepository>();
@@ -49,58 +49,72 @@ public class FaturaReminderWorker : BackgroundService
         var evolutionApi = scope.ServiceProvider.GetRequiredService<IEvolutionApiClient>();
         var templateRepository = scope.ServiceProvider.GetRequiredService<IMensagemTemplateRepository>();
         var formatter = scope.ServiceProvider.GetRequiredService<IMensagemFormatter>();
+        var logRepository = scope.ServiceProvider.GetRequiredService<IRepository<LogNotificacao>>();
 
-        // 1. Verificar Status da Instância antes de tudo
+        // 1. Verificar Status WhatsApp
         var statusResult = await evolutionApi.ObterStatusAsync(cancellationToken);
-        if (!statusResult.IsSuccess || statusResult.Value != "open")
-        {
-            _logger.LogWarning($"[WHATSAPP] Os disparos foram ignorados porque a instância não está conectada (Status atual: {statusResult.Value ?? "Não Encontrada"}).");
-            return;
-        }
+        if (!statusResult.IsSuccess || statusResult.Value != "open") return;
 
-        // 2. Busca todas as faturas Pendentes
-        var faturas = await faturaRepository.ListAsync(cancellationToken);
-        var faturasPendentes = faturas.Where(f => f.Status == StatusFatura.Pendente).ToList();
+        // 2. Buscar faturas pendentes ou enviadas (que ainda não foram pagas)
+        var todasFaturas = await faturaRepository.ListAsync(cancellationToken);
+        var faturasAtivas = todasFaturas.Where(f => f.Status == StatusFatura.Pendente || f.Status == StatusFatura.Enviada).ToList();
 
-        if (!faturasPendentes.Any())
-        {
-            _logger.LogInformation("Nenhuma fatura pendente encontrada.");
-            return;
-        }
-
-        // 3. Buscar Template Padrão
+        // 3. Buscar Template
         var templates = await templateRepository.ListAsync(cancellationToken);
-        var template = templates.FirstOrDefault(t => t.IsPadrao) 
-            ?? new MensagemTemplate("Olá {NomeCliente}, sua fatura de R$ {Valor} vence em {Vencimento}. PIX: {ChavePix}", true);
+        var template = templates.FirstOrDefault(t => t.IsPadrao) ?? templates.FirstOrDefault();
+        if (template == null) return;
 
+        var hoje = DateTime.Today;
         var random = new Random();
-        foreach (var fatura in faturasPendentes)
+
+        foreach (var fatura in faturasAtivas)
         {
-            // Proteção Anti-Ban: Delay aleatório entre 10 e 25 segundos
-            var delay = random.Next(10000, 25000);
-            _logger.LogInformation($"[ANTI-BAN] Aguardando {delay/1000}s antes de enviar fatura {fatura.Id}...");
-            await Task.Delay(delay, cancellationToken);
+            bool deveEnviar = false;
+            string tipoNotificacao = "";
 
-            var cliente = await clienteRepository.GetByIdAsync(fatura.ClienteId, cancellationToken);
-            
-            if (cliente == null || !cliente.Ativo) continue;
-
-            string mensagem = await formatter.FormatarMensagemAsync(template.TextoBase, cliente, fatura, cancellationToken);
-
-            var result = await evolutionApi.EnviarMensagemAsync(cliente.WhatsApp, mensagem, cancellationToken);
-
-            if (result.IsSuccess)
+            // Lógica 1: Lembrete 3 dias antes
+            if (fatura.DataVencimento.Date == hoje.AddDays(3) && !fatura.Lembrete3DiasEnviado)
             {
-                var marcarResult = fatura.MarcarComoEnviada();
-                if (marcarResult.IsSuccess)
-                {
-                    await faturaRepository.UpdateAsync(fatura, cancellationToken);
-                    _logger.LogInformation($"Fatura {fatura.Id} enviada para o WhatsApp do cliente {cliente.NomeCompleto}.");
-                }
+                deveEnviar = true;
+                tipoNotificacao = "Lembrete_3_Dias";
             }
-            else
+            // Lógica 2: Cobrança no dia
+            else if (fatura.DataVencimento.Date == hoje && !fatura.CobrancaDiaEnviada)
             {
-                _logger.LogWarning($"Falha ao enviar fatura {fatura.Id} para {cliente.NomeCompleto}: {string.Join(',', result.Errors)}");
+                deveEnviar = true;
+                tipoNotificacao = "Cobranca_Vencimento";
+            }
+
+            if (deveEnviar)
+            {
+                var cliente = await clienteRepository.GetByIdAsync(fatura.ClienteId, cancellationToken);
+                if (cliente == null || !cliente.Ativo) continue;
+
+                // Anti-ban delay
+                await Task.Delay(random.Next(5000, 15000), cancellationToken);
+
+                string mensagem = await formatter.FormatarMensagemAsync(template.TextoBase, cliente, fatura, cancellationToken);
+                var sendResult = await evolutionApi.EnviarMensagemAsync(cliente.WhatsApp, mensagem, cancellationToken);
+
+                // Registrar Log de Auditoria
+                var log = new LogNotificacao(
+                    fatura.Id,
+                    tipoNotificacao,
+                    mensagem,
+                    cliente.WhatsApp,
+                    sendResult.IsSuccess,
+                    sendResult.IsSuccess ? null : string.Join(", ", sendResult.Errors)
+                );
+                await logRepository.AddAsync(log, cancellationToken);
+
+                if (sendResult.IsSuccess)
+                {
+                    if (tipoNotificacao == "Lembrete_3_Dias") fatura.MarcarLembreteEnviado();
+                    if (tipoNotificacao == "Cobranca_Vencimento") fatura.MarcarCobrancaDiaEnviada();
+                    
+                    fatura.MarcarComoEnviada(); // Atualiza o status geral também
+                    await faturaRepository.UpdateAsync(fatura, cancellationToken);
+                }
             }
         }
     }

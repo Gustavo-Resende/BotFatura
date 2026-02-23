@@ -1,5 +1,6 @@
 using Ardalis.Result;
 using BotFatura.Application.Common.Interfaces;
+using BotFatura.Domain.Entities;
 using BotFatura.Domain.Interfaces;
 using MediatR;
 
@@ -12,19 +13,22 @@ public class EnviarFaturaWhatsAppCommandHandler : IRequestHandler<EnviarFaturaWh
     private readonly IMensagemTemplateRepository _templateRepository;
     private readonly IEvolutionApiClient _evolutionApi;
     private readonly IMensagemFormatter _formatter;
+    private readonly IRepository<LogNotificacao> _logRepository;
 
     public EnviarFaturaWhatsAppCommandHandler(
         IFaturaRepository faturaRepository,
         IClienteRepository clienteRepository,
         IMensagemTemplateRepository templateRepository,
         IEvolutionApiClient evolutionApi,
-        IMensagemFormatter formatter)
+        IMensagemFormatter formatter,
+        IRepository<LogNotificacao> logRepository)
     {
         _faturaRepository = faturaRepository;
         _clienteRepository = clienteRepository;
         _templateRepository = templateRepository;
         _evolutionApi = evolutionApi;
         _formatter = formatter;
+        _logRepository = logRepository;
     }
 
     public async Task<Result> Handle(EnviarFaturaWhatsAppCommand request, CancellationToken cancellationToken)
@@ -57,6 +61,17 @@ public class EnviarFaturaWhatsAppCommandHandler : IRequestHandler<EnviarFaturaWh
 
         var sendResult = await _evolutionApi.EnviarMensagemAsync(cliente.WhatsApp, mensagem, cancellationToken);
         
+        // 6. Registro de Auditoria
+        var log = new LogNotificacao(
+            fatura.Id,
+            "Manual",
+            mensagem,
+            cliente.WhatsApp,
+            sendResult.IsSuccess,
+            sendResult.IsSuccess ? null : string.Join(", ", sendResult.Errors)
+        );
+        await _logRepository.AddAsync(log, cancellationToken);
+
         if (sendResult.IsSuccess)
         {
             fatura.MarcarComoEnviada();
