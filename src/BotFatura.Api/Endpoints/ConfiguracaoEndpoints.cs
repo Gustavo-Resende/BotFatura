@@ -12,7 +12,7 @@ public class ConfiguracaoEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/configuracoes").WithTags("Configuracoes");
+        var group = app.MapGroup("/api/configuracoes").WithTags("Configuracoes").RequireAuthorization();
 
         group.MapGet("/", async (ISender sender) =>
         {

@@ -1,9 +1,10 @@
 using BotFatura.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
 
 namespace BotFatura.Infrastructure.Data;
 
-public class AppDbContext : DbContext
+public class AppDbContext : IdentityDbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
@@ -11,6 +12,7 @@ public class AppDbContext : DbContext
     public DbSet<Fatura> Faturas { get; set; }
     public DbSet<MensagemTemplate> MensagensTemplate { get; set; }
     public DbSet<Configuracao> Configuracoes { get; set; }
+    public DbSet<LogNotificacao> LogsNotificacao { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

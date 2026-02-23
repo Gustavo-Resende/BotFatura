@@ -13,7 +13,7 @@ public class TemplateEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/templates").WithTags("Templates");
+        var group = app.MapGroup("/api/templates").WithTags("Templates").RequireAuthorization();
 
         group.MapGet("/", async (ISender sender) =>
         {

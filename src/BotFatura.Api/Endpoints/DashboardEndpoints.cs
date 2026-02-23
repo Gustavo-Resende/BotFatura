@@ -12,7 +12,7 @@ public class DashboardEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/dashboard").WithTags("Dashboard");
+        var group = app.MapGroup("/api/dashboard").WithTags("Dashboard").RequireAuthorization();
 
         group.MapGet("/resumo", async (IMediator mediator) =>
         {

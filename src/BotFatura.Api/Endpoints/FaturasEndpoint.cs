@@ -17,7 +17,7 @@ public class FaturasEndpoint : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/faturas").WithTags("Faturas");
+        var group = app.MapGroup("/api/faturas").WithTags("Faturas").RequireAuthorization();
 
         group.MapGet("/", async (StatusFatura? status, ISender sender) =>
         {

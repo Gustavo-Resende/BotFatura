@@ -17,7 +17,7 @@ public class ClientesEndpoint : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/clientes").WithTags("Clientes");
+        var group = app.MapGroup("/api/clientes").WithTags("Clientes").RequireAuthorization();
 
         group.MapPost("/", async (CadastrarClienteCommand command, ISender sender) =>
         {

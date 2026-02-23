@@ -10,7 +10,7 @@ public class WhatsAppEndpoints : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        var group = app.MapGroup("/api/whatsapp").WithTags("WhatsApp");
+        var group = app.MapGroup("/api/whatsapp").WithTags("WhatsApp").RequireAuthorization();
 
         group.MapGet("/status", async (IEvolutionApiClient client) =>
         {
