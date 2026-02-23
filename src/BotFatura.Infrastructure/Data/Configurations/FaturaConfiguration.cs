@@ -29,7 +29,7 @@ public class FaturaConfiguration : IEntityTypeConfiguration<Fatura>
             .IsRequired();
 
         // Relacionamento 1:N com Cliente
-        builder.HasOne<Cliente>()
+        builder.HasOne(f => f.Cliente)
             .WithMany()
             .HasForeignKey(f => f.ClienteId)
             .OnDelete(DeleteBehavior.Restrict);
