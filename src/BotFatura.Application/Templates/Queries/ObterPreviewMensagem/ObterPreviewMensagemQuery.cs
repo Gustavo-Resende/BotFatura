@@ -1,3 +1,4 @@
+using BotFatura.Application.Common.Interfaces;
 using BotFatura.Domain.Interfaces;
 using MediatR;
 using Ardalis.Result;
@@ -10,11 +11,16 @@ public class ObterPreviewMensagemQueryHandler : IRequestHandler<ObterPreviewMens
 {
     private readonly IClienteRepository _clienteRepository;
     private readonly IMensagemTemplateRepository _templateRepository;
+    private readonly IMensagemFormatter _formatter;
 
-    public ObterPreviewMensagemQueryHandler(IClienteRepository clienteRepository, IMensagemTemplateRepository templateRepository)
+    public ObterPreviewMensagemQueryHandler(
+        IClienteRepository clienteRepository, 
+        IMensagemTemplateRepository templateRepository,
+        IMensagemFormatter formatter)
     {
         _clienteRepository = clienteRepository;
         _templateRepository = templateRepository;
+        _formatter = formatter;
     }
 
     public async Task<Result<string>> Handle(ObterPreviewMensagemQuery request, CancellationToken cancellationToken)
@@ -26,16 +32,15 @@ public class ObterPreviewMensagemQueryHandler : IRequestHandler<ObterPreviewMens
 
         if (string.IsNullOrWhiteSpace(textoBase))
         {
-            var faturas = await _templateRepository.ListAsync(cancellationToken);
-            var template = faturas.FirstOrDefault(t => t.IsPadrao);
+            var templates = await _templateRepository.ListAsync(cancellationToken);
+            var template = templates.FirstOrDefault(t => t.IsPadrao) ?? templates.FirstOrDefault();
             textoBase = template?.TextoBase ?? "Olá {NomeCliente}, sua fatura de R$ {Valor} vence em {Vencimento}.";
         }
 
-        // Agora garantimos que textoBase não é nulo para o Replace
-        string mensagem = textoBase!
-            .Replace("{NomeCliente}", cliente.NomeCompleto)
-            .Replace("{Valor}", "150,00")
-            .Replace("{Vencimento}", DateTime.UtcNow.AddDays(5).ToString("dd/MM/yyyy"));
+        // Fatura fake para o preview
+        var faturaFake = new BotFatura.Domain.Entities.Fatura(cliente.Id, 150.00m, DateTime.UtcNow.AddDays(5));
+
+        string mensagem = await _formatter.FormatarMensagemAsync(textoBase, cliente, faturaFake, cancellationToken);
 
         return Result.Success(mensagem);
     }

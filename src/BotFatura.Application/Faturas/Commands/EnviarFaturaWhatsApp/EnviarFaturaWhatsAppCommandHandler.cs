@@ -11,17 +11,20 @@ public class EnviarFaturaWhatsAppCommandHandler : IRequestHandler<EnviarFaturaWh
     private readonly IClienteRepository _clienteRepository;
     private readonly IMensagemTemplateRepository _templateRepository;
     private readonly IEvolutionApiClient _evolutionApi;
+    private readonly IMensagemFormatter _formatter;
 
     public EnviarFaturaWhatsAppCommandHandler(
         IFaturaRepository faturaRepository,
         IClienteRepository clienteRepository,
         IMensagemTemplateRepository templateRepository,
-        IEvolutionApiClient evolutionApi)
+        IEvolutionApiClient evolutionApi,
+        IMensagemFormatter formatter)
     {
         _faturaRepository = faturaRepository;
         _clienteRepository = clienteRepository;
         _templateRepository = templateRepository;
         _evolutionApi = evolutionApi;
+        _formatter = formatter;
     }
 
     public async Task<Result> Handle(EnviarFaturaWhatsAppCommand request, CancellationToken cancellationToken)
@@ -41,29 +44,18 @@ public class EnviarFaturaWhatsAppCommandHandler : IRequestHandler<EnviarFaturaWh
         if (!statusResult.IsSuccess || statusResult.Value != "open")
             return Result.Error($"A instância do WhatsApp não está conectada. Status: {statusResult.Value}");
 
-        // 4. Obter Template e Montar Mensagem
+        // 4. Obter Template e Montar Mensagem via Formatter
         var templates = await _templateRepository.ListAsync(cancellationToken);
         var template = templates.FirstOrDefault(t => t.IsPadrao) ?? templates.FirstOrDefault();
 
-        string mensagem;
-        if (template != null)
-        {
-            mensagem = template.TextoBase
-                .Replace("{NomeCliente}", cliente.NomeCompleto)
-                .Replace("{Valor}", fatura.Valor.ToString("F2"))
-                .Replace("{Vencimento}", fatura.DataVencimento.ToString("dd/MM/yyyy"));
-        }
-        else
-        {
-            mensagem = $"Olá {cliente.NomeCompleto}! Identificamos uma fatura pendente no valor de R$ {fatura.Valor:F2} com vencimento para {fatura.DataVencimento:dd/MM/yyyy}.";
-        }
+        string templateTexto = template?.TextoBase ?? "Olá {NomeCliente}, sua fatura de R$ {Valor} vence em {Vencimento}.";
+        string mensagem = await _formatter.FormatarMensagemAsync(templateTexto, cliente, fatura, cancellationToken);
 
         // 5. Enviar Mensagem (Com delay de segurança anti-ban de 5 a 10s)
         var delayManual = new Random().Next(5000, 10000);
         await Task.Delay(delayManual, cancellationToken);
 
         var sendResult = await _evolutionApi.EnviarMensagemAsync(cliente.WhatsApp, mensagem, cancellationToken);
-
         
         if (sendResult.IsSuccess)
         {

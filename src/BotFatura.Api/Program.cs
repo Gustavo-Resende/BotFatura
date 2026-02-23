@@ -64,7 +64,7 @@ using (var scope = app.Services.CreateScope())
     if (!context.MensagensTemplate.Any())
     {
         context.MensagensTemplate.Add(new BotFatura.Domain.Entities.MensagemTemplate(
-            "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.",
+            "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.",
             isPadrao: true));
         context.SaveChanges();
     }

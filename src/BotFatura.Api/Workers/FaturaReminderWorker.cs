@@ -1,4 +1,5 @@
 using BotFatura.Application.Common.Interfaces;
+using BotFatura.Domain.Entities;
 using BotFatura.Domain.Enums;
 using BotFatura.Domain.Interfaces;
 using Microsoft.Extensions.DependencyInjection;
@@ -35,7 +36,7 @@ public class FaturaReminderWorker : BackgroundService
                 _logger.LogError(ex, "Erro fatal ao processar faturas pendentes.");
             }
 
-            // Aguarda 5 minutos antes da proxima varredura (no mundo real pode ser 1 dia, ex: Task.Delay(TimeSpan.FromHours(24)))
+            // Aguarda 5 minutos antes da proxima varredura
             await Task.Delay(TimeSpan.FromMinutes(5), stoppingToken);
         }
     }
@@ -46,6 +47,8 @@ public class FaturaReminderWorker : BackgroundService
         var faturaRepository = scope.ServiceProvider.GetRequiredService<IFaturaRepository>();
         var clienteRepository = scope.ServiceProvider.GetRequiredService<IClienteRepository>();
         var evolutionApi = scope.ServiceProvider.GetRequiredService<IEvolutionApiClient>();
+        var templateRepository = scope.ServiceProvider.GetRequiredService<IMensagemTemplateRepository>();
+        var formatter = scope.ServiceProvider.GetRequiredService<IMensagemFormatter>();
 
         // 1. Verificar Status da Instância antes de tudo
         var statusResult = await evolutionApi.ObterStatusAsync(cancellationToken);
@@ -65,6 +68,11 @@ public class FaturaReminderWorker : BackgroundService
             return;
         }
 
+        // 3. Buscar Template Padrão
+        var templates = await templateRepository.ListAsync(cancellationToken);
+        var template = templates.FirstOrDefault(t => t.IsPadrao) 
+            ?? new MensagemTemplate("Olá {NomeCliente}, sua fatura de R$ {Valor} vence em {Vencimento}. PIX: {ChavePix}", true);
+
         var random = new Random();
         foreach (var fatura in faturasPendentes)
         {
@@ -74,11 +82,10 @@ public class FaturaReminderWorker : BackgroundService
             await Task.Delay(delay, cancellationToken);
 
             var cliente = await clienteRepository.GetByIdAsync(fatura.ClienteId, cancellationToken);
-
             
             if (cliente == null || !cliente.Ativo) continue;
 
-            string mensagem = $"Olá {cliente.NomeCompleto}, você possui uma fatura pendente no valor de R$ {fatura.Valor:F2} com vencimento para {fatura.DataVencimento:dd/MM/yyyy}.";
+            string mensagem = await formatter.FormatarMensagemAsync(template.TextoBase, cliente, fatura, cancellationToken);
 
             var result = await evolutionApi.EnviarMensagemAsync(cliente.WhatsApp, mensagem, cancellationToken);
 

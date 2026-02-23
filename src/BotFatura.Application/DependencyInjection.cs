@@ -1,5 +1,7 @@
 using System.Reflection;
 using BotFatura.Application.Common.Behaviors;
+using BotFatura.Application.Common.Interfaces;
+using BotFatura.Application.Common.Services;
 using FluentValidation;
 using MediatR;
 using Microsoft.Extensions.DependencyInjection;
@@ -16,6 +18,8 @@ public static class DependencyInjection
             cfg.RegisterServicesFromAssembly(Assembly.GetExecutingAssembly());
             cfg.AddBehavior(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
         });
+
+        services.AddScoped<IMensagemFormatter, MensagemFormatter>();
 
         return services;
     }
