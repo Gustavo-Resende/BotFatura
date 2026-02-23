@@ -27,8 +27,12 @@ Este plano foca na entrega rápida e segura do BotFatura, priorizando a seguran�
 ---
 
 ## ✅ Implementado Recentemente (Pronto para Uso)
+- **Segurança (JWT):** Sistema de login implementado. Todas as rotas da API agora exigem o Token `Bearer`.
+- **Dono do Sistema:** Usuário administrador padrão criado (`admin@botfatura.com.br` / `Admin@123`).
 - **Dados de PIX:** Criada sessão de configurações globais para Chave PIX e Nome do Titular.
 - **Hierarquia de Mensagens:** Centralizada a lógica de formatação de mensagens com suporte às novas variáveis `{NomeDono}` e `{ChavePix}`.
+- **Lembrete Inteligente (3 dias):** O robô agora monitora faturas e avisa automaticamente 3 dias antes e no dia do vencimento.
+- **Auditoria de Envios:** Toda mensagem (automática ou manual) agora gera um log de "Prova de Envio" no banco de dados.
 - **Bug Fix:** Corrigido erro de mapeamento de banco de dados (`ClienteId1`) e estabilizada a visualização das rotas no Swagger.
 
 ---
