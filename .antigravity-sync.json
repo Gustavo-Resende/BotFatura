@@ -1,0 +1,66 @@
+{
+    "project": "BotFatura",
+    "version": "1.0.0",
+    "last_sync": "2026-02-23T18:45:00",
+    "architecture": {
+        "backend": "ASP.NET Core 8",
+        "patterns": [
+            "Clean Architecture",
+            "DDD",
+            "CQRS",
+            "Minimal APIs"
+        ],
+        "database": "PostgreSQL 16",
+        "auth": "JWT Bearer (ASP.NET Core Identity)"
+    },
+    "api_specs": {
+        "base_path": "/api",
+        "error_format": "ProblemDetails (RFC 7807) - Focus on 'errors' dictionary for validation",
+        "auth": {
+            "login_endpoint": "/api/auth/login",
+            "payload": [
+                "email",
+                "password"
+            ],
+            "returns": [
+                "accessToken",
+                "refreshToken"
+            ]
+        },
+        "whatsapp": {
+            "status": "GET /api/whatsapp/status",
+            "connect": "GET /api/whatsapp/conectar (Returns qrcodeBase64)",
+            "polling_suggestion": "15 seconds"
+        },
+        "faturas": {
+            "list": "GET /api/faturas",
+            "dashboard_resumo": "GET /api/dashboard/resumo (Now includes TotalPago, TotalAtrasado, FaturasAtrasadasCount)",
+            "actions": [
+                "POST /api/faturas/{id}/pagar",
+                "POST /api/faturas/{id}/cancelar",
+                "POST /api/faturas/{id}/enviar-whatsapp"
+            ]
+        }
+    },
+    "business_rules": {
+        "fatura_status": [
+            "Pendente",
+            "Enviada",
+            "Paga",
+            "Cancelada"
+        ],
+        "atrasada_logic": "Calculated: (Status==Pendente||Enviada) && DataVencimento < Today",
+        "notification_tags": [
+            "{NomeCliente}",
+            "{Valor}",
+            "{Vencimento}",
+            "{NomeDono}",
+            "{ChavePix}"
+        ],
+        "protection": "Anti-Ban delays implemented on notification worker"
+    },
+    "frontend_instructions": {
+        "naming_convention": "useQuery for GETs, useCommand for POST/PUT/DELETE",
+        "styling": "Matte Black background, Electric Blue accents, Soft Shadows, Bento Grid layout"
+    }
+}

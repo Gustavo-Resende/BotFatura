@@ -18,19 +18,38 @@ public class ObterResumoDashboardQueryHandler : IRequestHandler<ObterResumoDashb
 
     public async Task<DashboardResumoDto> Handle(ObterResumoDashboardQuery request, CancellationToken cancellationToken)
     {
-        var hoje = DateTime.UtcNow.Date;
+        var pendentesOuEnviadasStatus = new[] { StatusFatura.Pendente, StatusFatura.Enviada };
+        var pagasStatus = new[] { StatusFatura.Paga };
 
-        var faturas = await _faturaRepository.ListAsync(cancellationToken);
-        var clientes = await _clienteRepository.ListAsync(cancellationToken);
+        var totalPendenteTask = _faturaRepository.ObterSomaPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var totalVencendoHojeTask = _faturaRepository.ObterSomaVencendoHojeAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var totalPagoTask = _faturaRepository.ObterSomaPorStatusAsync(pagasStatus, cancellationToken);
+        var totalAtrasadoTask = _faturaRepository.ObterSomaAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
+        
+        // Para simplificar, assumimos que todos os clientes cadastrados são "ativos" para o contador rápido
+        // ou você pode depois implementar uma especificação para isso.
+        var clientesAtivosCountTask = _clienteRepository.CountAsync(cancellationToken); 
+        var faturasPendentesCountTask = _faturaRepository.ObterContagemPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var faturasAtrasadasCountTask = _faturaRepository.ObterContagemAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
 
-        var pendentes = faturas.Where(f => f.Status == StatusFatura.Pendente).ToList();
+        await Task.WhenAll(
+            totalPendenteTask, 
+            totalVencendoHojeTask, 
+            totalPagoTask, 
+            totalAtrasadoTask, 
+            clientesAtivosCountTask, 
+            faturasPendentesCountTask, 
+            faturasAtrasadasCountTask);
 
         return new DashboardResumoDto
         {
-            TotalPendente = pendentes.Sum(f => f.Valor),
-            TotalVencendoHoje = pendentes.Where(f => f.DataVencimento.Date == hoje).Sum(f => f.Valor),
-            ClientesAtivosCount = clientes.Count(c => c.Ativo),
-            FaturasPendentesCount = pendentes.Count
+            TotalPendente = await totalPendenteTask,
+            TotalVencendoHoje = await totalVencendoHojeTask,
+            TotalPago = await totalPagoTask,
+            TotalAtrasado = await totalAtrasadoTask,
+            ClientesAtivosCount = await clientesAtivosCountTask,
+            FaturasPendentesCount = await faturasPendentesCountTask,
+            FaturasAtrasadasCount = await faturasAtrasadasCountTask
         };
     }
 }
