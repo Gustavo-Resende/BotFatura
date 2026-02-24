@@ -1,0 +1,7 @@
+[2026-02-24 19:30] Session Started: Refactoring Phase 2
+[2026-02-24 19:31] Task 0 - Security Refactor (Minimal JWT) completed in previous manual session.
+[2026-02-24 19:40] Task 1 - Desacoplamento da Régua de Cobrança: Verificado que a IReguaCobrancaService e ReguaCobrancaService já haviam sido criadas e registradas.
+[2026-02-24 19:42] Task 2 - Testes Unitários da Régua de Cobrança: Projeto de testes configurado e criado ReguaCobrancaServiceTests.cs com 5 testes passando.
+[2026-02-24 19:47] Task 3 - Refatoração do Worker: FaturaReminderWorker refatorado para usar IReguaCobrancaService, removendo lógica de datas.
+[2026-02-24 19:55] Task 4 - Otimização de Consultas: Criada FaturasParaNotificarSpec e FaturaReminderWorker atualizado para usar Specification, otimizando performance ao filtrar no banco e evitar N+1 no carregamento de clientes.
+[2026-02-24 20:02] Task 5 - Resiliência com Polly: Instalado Microsoft.Extensions.Http.Polly e configurado Wait and Retry (3 tentativas com backoff exponencial e jitter) no HttpClient da Evolution API.

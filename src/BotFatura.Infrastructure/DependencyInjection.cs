@@ -6,6 +6,8 @@ using BotFatura.Infrastructure.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Polly;
+using Polly.Extensions.Http;
 
 namespace BotFatura.Infrastructure;
 
@@ -24,8 +26,12 @@ public static class DependencyInjection
         // Registrando o inicializador do banco
         services.AddScoped<IDbInitializer, DbInitializer>();
 
-        // Registrando o cliente HTTP da Evolution API
-        services.AddHttpClient<IEvolutionApiClient, EvolutionApiClient>();
+        // Registrando o cliente HTTP da Evolution API com resiliência
+        services.AddHttpClient<IEvolutionApiClient, EvolutionApiClient>()
+            .AddTransientHttpErrorPolicy(policy => 
+                policy.WaitAndRetryAsync(3, retryAttempt => 
+                    TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) 
+                    + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 1000))));
 
         return services;
     }
