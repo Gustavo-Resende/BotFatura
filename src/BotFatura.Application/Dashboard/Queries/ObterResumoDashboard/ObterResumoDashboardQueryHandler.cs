@@ -21,35 +21,24 @@ public class ObterResumoDashboardQueryHandler : IRequestHandler<ObterResumoDashb
         var pendentesOuEnviadasStatus = new[] { StatusFatura.Pendente, StatusFatura.Enviada };
         var pagasStatus = new[] { StatusFatura.Paga };
 
-        var totalPendenteTask = _faturaRepository.ObterSomaPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
-        var totalVencendoHojeTask = _faturaRepository.ObterSomaVencendoHojeAsync(pendentesOuEnviadasStatus, cancellationToken);
-        var totalPagoTask = _faturaRepository.ObterSomaPorStatusAsync(pagasStatus, cancellationToken);
-        var totalAtrasadoTask = _faturaRepository.ObterSomaAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var totalPendente = await _faturaRepository.ObterSomaPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var totalVencendoHoje = await _faturaRepository.ObterSomaVencendoHojeAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var totalPago = await _faturaRepository.ObterSomaPorStatusAsync(pagasStatus, cancellationToken);
+        var totalAtrasado = await _faturaRepository.ObterSomaAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
         
-        // Para simplificar, assumimos que todos os clientes cadastrados são "ativos" para o contador rápido
-        // ou você pode depois implementar uma especificação para isso.
-        var clientesAtivosCountTask = _clienteRepository.CountAsync(cancellationToken); 
-        var faturasPendentesCountTask = _faturaRepository.ObterContagemPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
-        var faturasAtrasadasCountTask = _faturaRepository.ObterContagemAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
-
-        await Task.WhenAll(
-            totalPendenteTask, 
-            totalVencendoHojeTask, 
-            totalPagoTask, 
-            totalAtrasadoTask, 
-            clientesAtivosCountTask, 
-            faturasPendentesCountTask, 
-            faturasAtrasadasCountTask);
+        var clientesAtivosCount = await _clienteRepository.CountAsync(cancellationToken); 
+        var faturasPendentesCount = await _faturaRepository.ObterContagemPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var faturasAtrasadasCount = await _faturaRepository.ObterContagemAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
 
         return new DashboardResumoDto
         {
-            TotalPendente = await totalPendenteTask,
-            TotalVencendoHoje = await totalVencendoHojeTask,
-            TotalPago = await totalPagoTask,
-            TotalAtrasado = await totalAtrasadoTask,
-            ClientesAtivosCount = await clientesAtivosCountTask,
-            FaturasPendentesCount = await faturasPendentesCountTask,
-            FaturasAtrasadasCount = await faturasAtrasadasCountTask
+            TotalPendente = totalPendente,
+            TotalVencendoHoje = totalVencendoHoje,
+            TotalPago = totalPago,
+            TotalAtrasado = totalAtrasado,
+            ClientesAtivosCount = clientesAtivosCount,
+            FaturasPendentesCount = faturasPendentesCount,
+            FaturasAtrasadasCount = faturasAtrasadasCount
         };
     }
 }
