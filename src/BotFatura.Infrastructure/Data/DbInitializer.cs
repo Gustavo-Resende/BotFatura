@@ -1,5 +1,5 @@
 using BotFatura.Domain.Entities;
-using Microsoft.AspNetCore.Identity;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -30,53 +30,18 @@ public class DbInitializer : IDbInitializer
     {
         using var scope = _serviceProvider.CreateScope();
         var context = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-        var userManager = scope.ServiceProvider.GetRequiredService<UserManager<IdentityUser>>();
 
         try
         {
             _logger.LogInformation("Iniciando migrações de banco de dados...");
             await context.Database.MigrateAsync();
 
-            await SeedAdminUserAsync(userManager);
             await SeedDefaultTemplatesAsync(context);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Ocorreu um erro ao inicializar o banco de dados.");
             throw;
-        }
-    }
-
-    private async Task SeedAdminUserAsync(UserManager<IdentityUser> userManager)
-    {
-        var adminEmail = _configuration["DefaultAdmin:Email"] ?? "admin@botfatura.com.br";
-        var adminPassword = _configuration["DefaultAdmin:Password"] ?? "BF_P@ss_9932_*xZ";
-
-        var adminUser = await userManager.FindByEmailAsync(adminEmail);
-
-        if (adminUser == null)
-        {
-            _logger.LogInformation("Criando usuário administrador padrão: {Email}", adminEmail);
-            adminUser = new IdentityUser
-            {
-                UserName = adminEmail,
-                Email = adminEmail,
-                EmailConfirmed = true
-            };
-            
-            var result = await userManager.CreateAsync(adminUser, adminPassword);
-            if (!result.Succeeded)
-            {
-                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
-                _logger.LogError("Falha ao criar usuário admin: {Errors}", errors);
-            }
-        }
-        else
-        {
-            // Opcional: Garantir que a senha está sincronizada com o config durante o desenvolvimento
-            _logger.LogInformation("Usuário admin já existe. Resetando senha para garantir sincronia com config.");
-            var token = await userManager.GeneratePasswordResetTokenAsync(adminUser);
-            await userManager.ResetPasswordAsync(adminUser, token, adminPassword);
         }
     }
 
