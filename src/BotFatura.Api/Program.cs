@@ -48,16 +48,16 @@ builder.Services.AddAuthentication(options => {
 });
 builder.Services.AddAuthorization();
 
-// Injecting Layers
+// Injetando as camadas
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddScoped<BotFatura.Application.Common.Interfaces.IAuthService, BotFatura.Api.Services.AuthService>();
 
-// Add Carter for Minimal APIs
+// Adicionando Carter para Minimal APIs
 builder.Services.AddCarter();
 
-// Register the Background Worker for Faturas
+// Registrando o Background Worker para Faturas
 builder.Services.AddHostedService<BotFatura.Api.Workers.FaturaReminderWorker>();
 
 builder.Services.AddSwaggerGen(c =>
@@ -101,7 +101,7 @@ var app = builder.Build();
 
 Console.WriteLine($"[DEBUG] Usando Connection String: {app.Configuration.GetConnectionString("DefaultConnection")}");
 
-// Configure the HTTP request pipeline.
+// Configurando o pipeline HTTP
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -115,10 +115,9 @@ app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Carter Endpoints will handle auth
+// Carter Endpoints irão lidar com a autenticação
 
-
-// Map Carter Endpoints
+// Mapeando os endpoints do Carter
 app.MapCarter();
 
 // Inicializar o Banco de Dados (Migrações e Seeding)
