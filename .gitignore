@@ -490,4 +490,5 @@ appsettings.Local.json
 # Antigravity / Ralph Loop patterns
 .gemini/
 .agents/
+docs/
 progress.txt
