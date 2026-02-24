@@ -486,3 +486,8 @@ $RECYCLE.BIN/
 .env.local
 .env.*.local
 appsettings.Local.json
+
+# Antigravity / Ralph Loop patterns
+.gemini/
+.agents/
+progress.txt
