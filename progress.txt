@@ -5,3 +5,7 @@
 [2026-02-24 19:47] Task 3 - Refatoração do Worker: FaturaReminderWorker refatorado para usar IReguaCobrancaService, removendo lógica de datas.
 [2026-02-24 19:55] Task 4 - Otimização de Consultas: Criada FaturasParaNotificarSpec e FaturaReminderWorker atualizado para usar Specification, otimizando performance ao filtrar no banco e evitar N+1 no carregamento de clientes.
 [2026-02-24 20:02] Task 5 - Resiliência com Polly: Instalado Microsoft.Extensions.Http.Polly e configurado Wait and Retry (3 tentativas com backoff exponencial e jitter) no HttpClient da Evolution API.
+[2026-02-24 20:10] Task 6 - Ajustes de Infra e Seeding: Removido pacote Identity, implementada conversão global de DateTime para UTC no AppDbContext e removido switch legado de compatibilidade de data no Program.cs.
+
+----------
+ralph-done-jvvvy

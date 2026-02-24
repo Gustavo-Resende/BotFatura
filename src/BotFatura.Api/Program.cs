@@ -3,11 +3,7 @@ using BotFatura.Infrastructure;
 using Carter;
 using Microsoft.EntityFrameworkCore;
 
-// Corrigir erro de DateTime no Npgsql/PostgreSQL
-AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
-
 var builder = WebApplication.CreateBuilder(args);
-
 
 // Adicionar suporte a configurações locais (Local.json) que não vão para o Git
 builder.Configuration.AddJsonFile("appsettings.Local.json", optional: true, reloadOnChange: true);
@@ -29,15 +25,34 @@ builder.Services.AddCors(options =>
 });
 
 // Adicionando suporte a Autenticação e Autorização
-builder.Services.AddAuthentication();
+var jwtSettings = builder.Configuration.GetSection("JwtSettings");
+var secretKey = System.Text.Encoding.ASCII.GetBytes(jwtSettings["Secret"]!);
+
+builder.Services.AddAuthentication(options => {
+    options.DefaultAuthenticateScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = Microsoft.AspNetCore.Authentication.JwtBearer.JwtBearerDefaults.AuthenticationScheme;
+}).AddJwtBearer(options => {
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
+    {
+        ValidateIssuerSigningKey = true,
+        IssuerSigningKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(secretKey),
+        ValidateIssuer = true,
+        ValidIssuer = jwtSettings["Issuer"],
+        ValidateAudience = true,
+        ValidAudience = jwtSettings["Audience"],
+        ValidateLifetime = true,
+        ClockSkew = TimeSpan.Zero
+    };
+});
 builder.Services.AddAuthorization();
 
 // Injecting Layers
 builder.Services.AddApplicationServices();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 
-builder.Services.AddIdentityApiEndpoints<Microsoft.AspNetCore.Identity.IdentityUser>()
-    .AddEntityFrameworkStores<BotFatura.Infrastructure.Data.AppDbContext>();
+builder.Services.AddScoped<BotFatura.Application.Common.Interfaces.IAuthService, BotFatura.Api.Services.AuthService>();
 
 // Add Carter for Minimal APIs
 builder.Services.AddCarter();
@@ -100,8 +115,8 @@ app.UseCors("FrontendPolicy");
 app.UseAuthentication();
 app.UseAuthorization();
 
-// Mapeia rotas de login/registro nativas do .NET 8 Identity
-app.MapGroup("/api/auth").MapIdentityApi<Microsoft.AspNetCore.Identity.IdentityUser>().WithTags("Auth");
+// Carter Endpoints will handle auth
+
 
 // Map Carter Endpoints
 app.MapCarter();
