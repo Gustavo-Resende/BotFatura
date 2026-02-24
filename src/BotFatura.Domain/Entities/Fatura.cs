@@ -43,6 +43,9 @@ public class Fatura : Entity
 
     public Result MarcarComoPaga()
     {
+        if (Status == StatusFatura.Paga)
+            return Result.Error("Esta fatura já está paga.");
+
         if (Status == StatusFatura.Cancelada)
             return Result.Error("Uma fatura cancelada não pode ser paga.");
 
