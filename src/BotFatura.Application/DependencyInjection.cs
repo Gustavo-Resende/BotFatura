@@ -20,6 +20,7 @@ public static class DependencyInjection
         });
 
         services.AddScoped<IMensagemFormatter, MensagemFormatter>();
+        services.AddScoped<IReguaCobrancaService, ReguaCobrancaService>();
 
         return services;
     }
