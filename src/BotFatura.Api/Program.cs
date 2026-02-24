@@ -16,6 +16,18 @@ builder.Configuration.AddEnvironmentVariables();
 // Add services to the container.
 builder.Services.AddEndpointsApiExplorer();
 
+// Configurando CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("FrontendPolicy", policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 // Adicionando suporte a Autenticação e Autorização
 builder.Services.AddAuthentication();
 builder.Services.AddAuthorization();
@@ -83,6 +95,8 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+app.UseCors("FrontendPolicy");
+
 app.UseAuthentication();
 app.UseAuthorization();
 
@@ -92,35 +106,11 @@ app.MapGroup("/api/auth").MapIdentityApi<Microsoft.AspNetCore.Identity.IdentityU
 // Map Carter Endpoints
 app.MapCarter();
 
-// Executar Migrações e Seeder
+// Inicializar o Banco de Dados (Migrações e Seeding)
 using (var scope = app.Services.CreateScope())
 {
-    var services = scope.ServiceProvider;
-    var context = services.GetRequiredService<BotFatura.Infrastructure.Data.AppDbContext>();
-    var userManager = services.GetRequiredService<Microsoft.AspNetCore.Identity.UserManager<Microsoft.AspNetCore.Identity.IdentityUser>>();
-    
-    // Aplica as migrações e cria o banco se não existir
-    context.Database.Migrate();
-
-    // Criar Usuário Admin Padrão
-    if (!userManager.Users.Any())
-    {
-        var adminUser = new Microsoft.AspNetCore.Identity.IdentityUser 
-        { 
-            UserName = "admin@botfatura.com.br", 
-            Email = "admin@botfatura.com.br",
-            EmailConfirmed = true 
-        };
-        userManager.CreateAsync(adminUser, "BF_P@ss_9932_*xZ").GetAwaiter().GetResult();
-    }
-
-    if (!context.MensagensTemplate.Any())
-    {
-        context.MensagensTemplate.Add(new BotFatura.Domain.Entities.MensagemTemplate(
-            "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.",
-            isPadrao: true));
-        context.SaveChanges();
-    }
+    var initializer = scope.ServiceProvider.GetRequiredService<BotFatura.Infrastructure.Data.IDbInitializer>();
+    await initializer.InitializeAsync();
 }
 
 app.Run();

@@ -21,6 +21,9 @@ public static class DependencyInjection
         services.AddScoped<IFaturaRepository, FaturaRepository>();
         services.AddScoped<IMensagemTemplateRepository, MensagemTemplateRepository>();
 
+        // Registrando o inicializador do banco
+        services.AddScoped<IDbInitializer, DbInitializer>();
+
         // Registrando o cliente HTTP da Evolution API
         services.AddHttpClient<IEvolutionApiClient, EvolutionApiClient>();
 
