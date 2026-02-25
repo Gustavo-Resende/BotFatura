@@ -18,27 +18,18 @@ public class ObterResumoDashboardQueryHandler : IRequestHandler<ObterResumoDashb
 
     public async Task<DashboardResumoDto> Handle(ObterResumoDashboardQuery request, CancellationToken cancellationToken)
     {
-        var pendentesOuEnviadasStatus = new[] { StatusFatura.Pendente, StatusFatura.Enviada };
-        var pagasStatus = new[] { StatusFatura.Paga };
-
-        var totalPendente = await _faturaRepository.ObterSomaPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
-        var totalVencendoHoje = await _faturaRepository.ObterSomaVencendoHojeAsync(pendentesOuEnviadasStatus, cancellationToken);
-        var totalPago = await _faturaRepository.ObterSomaPorStatusAsync(pagasStatus, cancellationToken);
-        var totalAtrasado = await _faturaRepository.ObterSomaAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
-        
-        var clientesAtivosCount = await _clienteRepository.CountAsync(cancellationToken); 
-        var faturasPendentesCount = await _faturaRepository.ObterContagemPorStatusAsync(pendentesOuEnviadasStatus, cancellationToken);
-        var faturasAtrasadasCount = await _faturaRepository.ObterContagemAtrasadasAsync(pendentesOuEnviadasStatus, cancellationToken);
+        var dadosFaturas = await _faturaRepository.ObterDadosConsolidadosDashboardAsync(cancellationToken);
+        var clientesAtivosCount = await _clienteRepository.CountAsync(cancellationToken);
 
         return new DashboardResumoDto
         {
-            TotalPendente = totalPendente,
-            TotalVencendoHoje = totalVencendoHoje,
-            TotalPago = totalPago,
-            TotalAtrasado = totalAtrasado,
+            TotalPendente = dadosFaturas.TotalPendente,
+            TotalVencendoHoje = dadosFaturas.TotalVencendoHoje,
+            TotalPago = dadosFaturas.TotalPago,
+            TotalAtrasado = dadosFaturas.TotalAtrasado,
             ClientesAtivosCount = clientesAtivosCount,
-            FaturasPendentesCount = faturasPendentesCount,
-            FaturasAtrasadasCount = faturasAtrasadasCount
+            FaturasPendentesCount = dadosFaturas.FaturasPendentesCount,
+            FaturasAtrasadasCount = dadosFaturas.FaturasAtrasadasCount
         };
     }
 }
