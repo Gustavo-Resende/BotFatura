@@ -34,7 +34,7 @@ public class ObterPreviewMensagemQueryHandler : IRequestHandler<ObterPreviewMens
         {
             var templates = await _templateRepository.ListAsync(cancellationToken);
             var template = templates.FirstOrDefault(t => t.IsPadrao) ?? templates.FirstOrDefault();
-            textoBase = template?.TextoBase ?? "Olá {NomeCliente}, sua fatura de R$ {Valor} vence em {Vencimento}.";
+            textoBase = template?.TextoBase ?? "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
         }
 
         // Fatura fake para o preview

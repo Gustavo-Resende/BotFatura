@@ -47,12 +47,20 @@ public class DbInitializer : IDbInitializer
 
     private async Task SeedDefaultTemplatesAsync(AppDbContext context)
     {
-        if (!await context.MensagensTemplate.AnyAsync())
+        var novoTexto = "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
+        
+        var templatePadrao = await context.MensagensTemplate.FirstOrDefaultAsync(t => t.IsPadrao);
+
+        if (templatePadrao == null)
         {
             _logger.LogInformation("Semeando templates padrão...");
-            context.MensagensTemplate.Add(new MensagemTemplate(
-                "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.",
-                isPadrao: true));
+            context.MensagensTemplate.Add(new MensagemTemplate(novoTexto, isPadrao: true));
+            await context.SaveChangesAsync();
+        }
+        else if (!templatePadrao.TextoBase.Contains("{ChavePix}"))
+        {
+            _logger.LogInformation("Atualizando template padrão com informações de PIX...");
+            templatePadrao.AtualizarTexto(novoTexto);
             await context.SaveChangesAsync();
         }
     }
