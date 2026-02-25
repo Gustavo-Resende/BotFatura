@@ -69,6 +69,20 @@ public class FaturaRepository : Repository<Fatura>, IFaturaRepository
         return await _dbContext.Faturas
             .CountAsync(f => status.Contains(f.Status) && f.DataVencimento.Date < hoje, cancellationToken);
     }
+    
+    public async Task<List<(DateTime Data, decimal Total)>> ObterHistoricoPagamentosAsync(DateTime inicio, DateTime fim, CancellationToken cancellationToken = default)
+    {
+        var faturasPagas = await _dbContext.Faturas
+            .Where(f => f.Status == StatusFatura.Paga &&
+                        f.DataVencimento.Date >= inicio.Date &&
+                        f.DataVencimento.Date <= fim.Date)
+            .GroupBy(f => f.DataVencimento.Date)
+            .Select(g => new { Data = g.Key, Total = g.Sum(f => f.Valor) })
+            .OrderBy(g => g.Data)
+            .ToListAsync(cancellationToken);
+
+        return faturasPagas.Select(x => (x.Data, x.Total)).ToList();
+    }
 }
 
 public class MensagemTemplateRepository : Repository<MensagemTemplate>, IMensagemTemplateRepository

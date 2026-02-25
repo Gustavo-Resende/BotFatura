@@ -25,6 +25,7 @@ public interface IFaturaRepository : IRepository<Fatura>
     Task<int> ObterContagemPorStatusAsync(IEnumerable<StatusFatura> status, CancellationToken cancellationToken = default);
     Task<decimal> ObterSomaAtrasadasAsync(IEnumerable<StatusFatura> status, CancellationToken cancellationToken = default);
     Task<int> ObterContagemAtrasadasAsync(IEnumerable<StatusFatura> status, CancellationToken cancellationToken = default);
+    Task<List<(DateTime Data, decimal Total)>> ObterHistoricoPagamentosAsync(DateTime inicio, DateTime fim, CancellationToken cancellationToken = default);
 }
 
 public interface IMensagemTemplateRepository : IRepository<MensagemTemplate>
