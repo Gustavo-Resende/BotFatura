@@ -52,7 +52,7 @@ public class EnviarFaturaWhatsAppCommandHandler : IRequestHandler<EnviarFaturaWh
         var templates = await _templateRepository.ListAsync(cancellationToken);
         var template = templates.FirstOrDefault(t => t.IsPadrao) ?? templates.FirstOrDefault();
 
-        string templateTexto = template?.TextoBase ?? "Olá {NomeCliente}, sua fatura de R$ {Valor} vence em {Vencimento}.";
+        string templateTexto = template?.TextoBase ?? "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
         string mensagem = await _formatter.FormatarMensagemAsync(templateTexto, cliente, fatura, cancellationToken);
 
         // 5. Enviar Mensagem (Com delay de segurança anti-ban de 5 a 10s)
