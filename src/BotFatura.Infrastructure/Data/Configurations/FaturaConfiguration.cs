@@ -24,6 +24,9 @@ public class FaturaConfiguration : IEntityTypeConfiguration<Fatura>
             .IsRequired()
             .HasConversion<string>()
             .HasMaxLength(50);
+
+        builder.HasIndex(f => f.DataVencimento);
+        builder.HasIndex(f => f.Status);
             
         builder.Property(f => f.CreatedAt)
             .IsRequired();
