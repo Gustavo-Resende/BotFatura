@@ -1,0 +1,12 @@
+### Task 1: Índices de Banco de Dados para Faturas
+- [x] Adicionados índices para `DataVencimento` e `Status` em `FaturaConfiguration.cs`.
+- [x] Gerada migration `AddIndexesToFaturas`.
+### Task 2: Refatoração do Repositório de Faturas
+- [x] Definido record `FaturaDadosConsolidados` na interface de domínio.
+- [x] Implementado método `ObterDadosConsolidadosDashboardAsync` em `FaturaRepository` com query otimizada (SQL único).
+
+### Task 3: Otimização do Handler de Dashboard
+- [x] Refatorado `ObterResumoDashboardQueryHandler` para utilizar o método consolidado, reduzindo as chamadas ao banco de 7 para 2.
+
+----------
+ralph-done-gyx77

@@ -491,5 +491,4 @@ appsettings.Local.json
 .gemini/
 .agents/
 docs/
-progress.txt
-PRD.md
+
