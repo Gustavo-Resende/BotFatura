@@ -14,6 +14,25 @@ public class ClienteRepository : Repository<Cliente>, IClienteRepository
 public class FaturaRepository : Repository<Fatura>, IFaturaRepository
 {
     public FaturaRepository(AppDbContext dbContext) : base(dbContext) { }
+    
+    public async Task<FaturaDadosConsolidados> ObterDadosConsolidadosDashboardAsync(CancellationToken cancellationToken = default)
+    {
+        var hoje = DateTime.UtcNow.Date;
+        var pendentesOuEnviadas = new[] { StatusFatura.Pendente, StatusFatura.Enviada };
+
+        return await _dbContext.Faturas
+            .GroupBy(_ => 1)
+            .Select(g => new FaturaDadosConsolidados
+            {
+                TotalPendente = g.Where(f => pendentesOuEnviadas.Contains(f.Status)).Sum(f => f.Valor),
+                TotalVencendoHoje = g.Where(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date == hoje).Sum(f => f.Valor),
+                TotalPago = g.Where(f => f.Status == StatusFatura.Paga).Sum(f => f.Valor),
+                TotalAtrasado = g.Where(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date < hoje).Sum(f => f.Valor),
+                FaturasPendentesCount = g.Count(f => pendentesOuEnviadas.Contains(f.Status)),
+                FaturasAtrasadasCount = g.Count(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date < hoje)
+            })
+            .FirstOrDefaultAsync(cancellationToken) ?? new FaturaDadosConsolidados();
+    }
 
     public async Task<decimal> ObterSomaPorStatusAsync(IEnumerable<StatusFatura> status, CancellationToken cancellationToken = default)
     {
