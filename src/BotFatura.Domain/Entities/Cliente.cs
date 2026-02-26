@@ -10,6 +10,10 @@ public class Cliente : Entity
     public string WhatsApp { get; private set; } = null!;
     public bool Ativo { get; private set; }
 
+    // Navegação (EF Core)
+    private readonly List<Contrato> _contratos = [];
+    public IReadOnlyCollection<Contrato> Contratos => _contratos.AsReadOnly();
+
     // Construtor protegido usado apenas via Factory ou EF Core
     protected Cliente() { }
 
