@@ -16,10 +16,10 @@ public class ListarClientesQueryHandler : IRequestHandler<ListarClientesQuery, R
 
     public async Task<Result<List<ClienteDto>>> Handle(ListarClientesQuery request, CancellationToken cancellationToken)
     {
-        var clientes = await _repository.ListAsync(cancellationToken);
+        var spec = new ListarClientesSpec();
+        var clientes = await _repository.ListAsync(spec, cancellationToken);
         
         var dtos = clientes
-            .OrderByDescending(c => c.CreatedAt)
             .Select(c => new ClienteDto(c.Id, c.NomeCompleto, c.WhatsApp, c.Ativo, c.CreatedAt))
             .ToList();
 

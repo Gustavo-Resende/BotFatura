@@ -9,6 +9,7 @@ public class FaturasParaNotificarSpec : Specification<Fatura>
     public FaturasParaNotificarSpec()
     {
         Query.Include(f => f.Cliente)
+             .AsNoTracking()
              .Where(f => (f.Status == StatusFatura.Pendente || f.Status == StatusFatura.Enviada) && f.Cliente.Ativo);
     }
 }

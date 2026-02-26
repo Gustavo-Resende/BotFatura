@@ -7,6 +7,7 @@ public sealed class ClientePorWhatsAppSpec : Specification<Cliente>
 {
     public ClientePorWhatsAppSpec(string whatsApp)
     {
-        Query.Where(c => c.WhatsApp == whatsApp);
+        Query.AsNoTracking()
+             .Where(c => c.WhatsApp == whatsApp);
     }
 }
