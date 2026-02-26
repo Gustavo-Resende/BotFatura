@@ -20,8 +20,8 @@ public class ObterConfiguracaoQueryHandler : IRequestHandler<ObterConfiguracaoQu
         var config = configs.FirstOrDefault();
 
         if (config == null)
-            return Result.Success(new ConfiguracaoDto("", ""));
+            return Result.Success(new ConfiguracaoDto("", "", 3));
 
-        return Result.Success(new ConfiguracaoDto(config.ChavePix, config.NomeTitularPix));
+        return Result.Success(new ConfiguracaoDto(config.ChavePix, config.NomeTitularPix, config.DiasAntecedenciaLembrete));
     }
 }

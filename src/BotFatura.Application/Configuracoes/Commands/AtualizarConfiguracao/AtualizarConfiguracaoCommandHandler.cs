@@ -21,12 +21,12 @@ public class AtualizarConfiguracaoCommandHandler : IRequestHandler<AtualizarConf
 
         if (config == null)
         {
-            config = new Configuracao(request.ChavePix, request.NomeTitularPix);
+            config = new Configuracao(request.ChavePix, request.NomeTitularPix, request.DiasAntecedenciaLembrete);
             await _repository.AddAsync(config, cancellationToken);
         }
         else
         {
-            config.AtualizarPix(request.ChavePix, request.NomeTitularPix);
+            config.AtualizarConfiguracao(request.ChavePix, request.NomeTitularPix, request.DiasAntecedenciaLembrete);
             await _repository.UpdateAsync(config, cancellationToken);
         }
 

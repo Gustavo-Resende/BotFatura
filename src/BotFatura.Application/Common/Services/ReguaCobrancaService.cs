@@ -6,14 +6,14 @@ namespace BotFatura.Application.Common.Services;
 
 public class ReguaCobrancaService : IReguaCobrancaService
 {
-    public IEnumerable<ReguaCobrancaItem> Processar(IEnumerable<Fatura> faturas, DateTime hoje)
+    public IEnumerable<ReguaCobrancaItem> Processar(IEnumerable<Fatura> faturas, DateTime hoje, int diasAntecedenciaLembrete)
     {
         var resultados = new List<ReguaCobrancaItem>();
 
         foreach (var fatura in faturas)
         {
-            // Lógica 1: Lembrete 3 dias antes
-            if (fatura.DataVencimento.Date == hoje.AddDays(3).Date && !fatura.Lembrete3DiasEnviado)
+            // Lógica 1: Lembrete N dias antes (configurável)
+            if (fatura.DataVencimento.Date == hoje.AddDays(diasAntecedenciaLembrete).Date && !fatura.Lembrete3DiasEnviado)
             {
                 resultados.Add(new ReguaCobrancaItem(fatura, "Lembrete_3_Dias"));
             }

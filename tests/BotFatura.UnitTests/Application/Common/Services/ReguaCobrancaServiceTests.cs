@@ -25,7 +25,7 @@ public class ReguaCobrancaServiceTests
         };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
 
         // Assert
         resultado.Should().HaveCount(1);
@@ -43,7 +43,7 @@ public class ReguaCobrancaServiceTests
         };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
 
         // Assert
         resultado.Should().HaveCount(1);
@@ -60,7 +60,7 @@ public class ReguaCobrancaServiceTests
         var faturas = new List<Fatura> { fatura };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
 
         // Assert
         resultado.Should().BeEmpty();
@@ -75,7 +75,7 @@ public class ReguaCobrancaServiceTests
         var faturas = new List<Fatura> { fatura };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
 
         // Assert
         resultado.Should().BeEmpty();
@@ -92,7 +92,7 @@ public class ReguaCobrancaServiceTests
         };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
 
         // Assert
         resultado.Should().BeEmpty();

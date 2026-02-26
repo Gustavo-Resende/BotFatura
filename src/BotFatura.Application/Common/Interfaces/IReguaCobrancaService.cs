@@ -5,5 +5,5 @@ namespace BotFatura.Application.Common.Interfaces;
 
 public interface IReguaCobrancaService
 {
-    IEnumerable<ReguaCobrancaItem> Processar(IEnumerable<Fatura> faturas, DateTime hoje);
+    IEnumerable<ReguaCobrancaItem> Processar(IEnumerable<Fatura> faturas, DateTime hoje, int diasAntecedenciaLembrete);
 }
