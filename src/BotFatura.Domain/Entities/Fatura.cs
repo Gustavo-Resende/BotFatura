@@ -17,6 +17,7 @@ public class Fatura : Entity
     // Controle de Régua de Cobrança
     public bool Lembrete3DiasEnviado { get; private set; }
     public bool CobrancaDiaEnviada { get; private set; }
+    public bool CobrancaAposVencimentoEnviada { get; private set; }
 
     // Navegação
     public Cliente Cliente { get; private set; } = null!;
@@ -34,6 +35,7 @@ public class Fatura : Entity
         Status = StatusFatura.Pendente;
         Lembrete3DiasEnviado = false;
         CobrancaDiaEnviada   = false;
+        CobrancaAposVencimentoEnviada = false;
     }
 
     public Result MarcarComoEnviada()
@@ -82,4 +84,5 @@ public class Fatura : Entity
 
     public void MarcarLembreteEnviado() => Lembrete3DiasEnviado = true;
     public void MarcarCobrancaDiaEnviada() => CobrancaDiaEnviada = true;
+    public void MarcarCobrancaAposVencimentoEnviada() => CobrancaAposVencimentoEnviada = true;
 }
