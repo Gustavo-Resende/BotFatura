@@ -16,7 +16,8 @@ public class ListarTemplatesQueryHandler : IRequestHandler<ListarTemplatesQuery,
 
     public async Task<Result<List<TemplateDto>>> Handle(ListarTemplatesQuery request, CancellationToken cancellationToken)
     {
-        var templates = await _repository.ListAsync(cancellationToken);
+        var spec = new ListarTemplatesSpec();
+        var templates = await _repository.ListAsync(spec, cancellationToken);
         
         var dtos = templates
             .Select(t => new TemplateDto(t.Id, t.TextoBase, t.IsPadrao))
