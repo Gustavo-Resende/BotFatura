@@ -27,6 +27,14 @@ public class FaturaConfiguration : IEntityTypeConfiguration<Fatura>
 
         builder.HasIndex(f => f.DataVencimento);
         builder.HasIndex(f => f.Status);
+
+        // Índice composto para queries do worker (Status, DataVencimento)
+        builder.HasIndex(f => new { f.Status, f.DataVencimento })
+               .HasDatabaseName("IX_Faturas_Status_DataVencimento");
+
+        // Índice composto para queries de cliente (ClienteId, Status)
+        builder.HasIndex(f => new { f.ClienteId, f.Status })
+               .HasDatabaseName("IX_Faturas_ClienteId_Status");
             
         builder.Property(f => f.CreatedAt)
             .IsRequired();

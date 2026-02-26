@@ -1,4 +1,5 @@
 using BotFatura.Domain.Entities;
+using BotFatura.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -19,6 +20,12 @@ public class MensagemTemplateConfiguration : IEntityTypeConfiguration<MensagemTe
         builder.Property(m => m.IsPadrao)
             .IsRequired()
             .HasDefaultValue(false);
+        
+        builder.Property(m => m.TipoNotificacao)
+            .IsRequired()
+            .HasConversion<int>();
+        
+        builder.HasIndex(m => m.TipoNotificacao);
             
         builder.Property(m => m.CreatedAt)
             .IsRequired();

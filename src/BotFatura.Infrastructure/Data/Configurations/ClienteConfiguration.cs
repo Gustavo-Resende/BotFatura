@@ -20,6 +20,11 @@ public class ClienteConfiguration : IEntityTypeConfiguration<Cliente>
             .IsRequired()
             .HasMaxLength(30);
 
+        // Índice único em WhatsApp para garantir unicidade e melhorar performance de busca
+        builder.HasIndex(c => c.WhatsApp)
+               .IsUnique()
+               .HasDatabaseName("IX_Clientes_WhatsApp");
+
         builder.Property(c => c.Ativo)
             .IsRequired()
             .HasDefaultValue(true);
