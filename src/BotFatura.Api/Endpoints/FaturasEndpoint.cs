@@ -1,4 +1,5 @@
 using Ardalis.Result;
+using BotFatura.Application.Faturas.Commands.AtualizarFatura;
 using BotFatura.Application.Faturas.Commands.ConfigurarCobranca;
 using BotFatura.Application.Faturas.Commands.EnviarFaturaWhatsApp;
 using BotFatura.Application.Faturas.Commands.RegistrarPagamento;
@@ -48,6 +49,24 @@ public class FaturasEndpoint : ICarterModule
             return Results.BadRequest(result.Errors);
         })
         .WithSummary("Configura uma nova cobrança.");
+
+        group.MapPut("/{id:guid}", async (Guid id, AtualizarFaturaCommand command, ISender sender) =>
+        {
+            var commandComId = command with { FaturaId = id };
+            var result = await sender.Send(commandComId);
+
+            if (result.IsSuccess)
+                return Results.Ok(new { message = "Fatura atualizada com sucesso." });
+
+            if (result.Status == ResultStatus.NotFound)
+                return Results.NotFound(result.Errors);
+
+            if (result.Status == ResultStatus.Invalid)
+                return Results.BadRequest(result.ValidationErrors);
+
+            return Results.BadRequest(result.Errors);
+        })
+        .WithSummary("Atualiza o valor e/ou a data de vencimento de uma fatura pendente ou enviada.");
 
         group.MapPost("/{id:guid}/pagar", async (Guid id, ISender sender) =>
         {
