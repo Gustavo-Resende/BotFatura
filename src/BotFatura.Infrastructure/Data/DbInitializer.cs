@@ -1,4 +1,5 @@
 using BotFatura.Domain.Entities;
+using BotFatura.Domain.Enums;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
@@ -47,21 +48,49 @@ public class DbInitializer : IDbInitializer
 
     private async Task SeedDefaultTemplatesAsync(AppDbContext context)
     {
-        var novoTexto = "Olá {NomeCliente}!\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
+        var textoLembrete = "Olá {NomeCliente}!\n\nLembramos que você tem uma fatura no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento até a data de vencimento.";
+        var textoVencimento = "Olá {NomeCliente}!\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
+        var textoAposVencimento = "Olá {NomeCliente}!\n\nSua fatura no valor de *R$ {Valor}* com vencimento em *{Vencimento}* ainda não foi paga.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, regularize sua situação o quanto antes para evitar interrupção do serviço.";
         
-        var templatePadrao = await context.MensagensTemplate.FirstOrDefaultAsync(t => t.IsPadrao);
+        // Verificar e criar template de Lembrete
+        var templateLembrete = await context.MensagensTemplate.FirstOrDefaultAsync(t => t.TipoNotificacao == TipoNotificacaoTemplate.Lembrete);
+        if (templateLembrete == null)
+        {
+            _logger.LogInformation("Criando template de Lembrete...");
+            context.MensagensTemplate.Add(new MensagemTemplate(textoLembrete, TipoNotificacaoTemplate.Lembrete, isPadrao: true));
+        }
+        else if (!templateLembrete.TextoBase.Contains("{ChavePix}"))
+        {
+            _logger.LogInformation("Atualizando template de Lembrete com informações de PIX...");
+            templateLembrete.AtualizarTexto(textoLembrete);
+        }
 
-        if (templatePadrao == null)
+        // Verificar e criar template de Vencimento
+        var templateVencimento = await context.MensagensTemplate.FirstOrDefaultAsync(t => t.TipoNotificacao == TipoNotificacaoTemplate.Vencimento);
+        if (templateVencimento == null)
         {
-            _logger.LogInformation("Semeando templates padrão...");
-            context.MensagensTemplate.Add(new MensagemTemplate(novoTexto, isPadrao: true));
-            await context.SaveChangesAsync();
+            _logger.LogInformation("Criando template de Vencimento...");
+            context.MensagensTemplate.Add(new MensagemTemplate(textoVencimento, TipoNotificacaoTemplate.Vencimento, isPadrao: true));
         }
-        else if (!templatePadrao.TextoBase.Contains("{ChavePix}"))
+        else if (!templateVencimento.TextoBase.Contains("{ChavePix}"))
         {
-            _logger.LogInformation("Atualizando template padrão com informações de PIX...");
-            templatePadrao.AtualizarTexto(novoTexto);
-            await context.SaveChangesAsync();
+            _logger.LogInformation("Atualizando template de Vencimento com informações de PIX...");
+            templateVencimento.AtualizarTexto(textoVencimento);
         }
+
+        // Verificar e criar template de Pós-Vencimento
+        var templateAposVencimento = await context.MensagensTemplate.FirstOrDefaultAsync(t => t.TipoNotificacao == TipoNotificacaoTemplate.AposVencimento);
+        if (templateAposVencimento == null)
+        {
+            _logger.LogInformation("Criando template de Pós-Vencimento...");
+            context.MensagensTemplate.Add(new MensagemTemplate(textoAposVencimento, TipoNotificacaoTemplate.AposVencimento, isPadrao: true));
+        }
+        else if (!templateAposVencimento.TextoBase.Contains("{ChavePix}"))
+        {
+            _logger.LogInformation("Atualizando template de Pós-Vencimento com informações de PIX...");
+            templateAposVencimento.AtualizarTexto(textoAposVencimento);
+        }
+
+        await context.SaveChangesAsync();
     }
 }

@@ -36,4 +36,5 @@ public interface IFaturaRepository : IRepository<Fatura>
 
 public interface IMensagemTemplateRepository : IRepository<MensagemTemplate>
 {
+    Task<MensagemTemplate?> ObterPorTipoAsync(Enums.TipoNotificacaoTemplate tipo, CancellationToken cancellationToken = default);
 }
