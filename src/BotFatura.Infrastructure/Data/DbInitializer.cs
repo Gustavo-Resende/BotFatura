@@ -47,7 +47,7 @@ public class DbInitializer : IDbInitializer
 
     private async Task SeedDefaultTemplatesAsync(AppDbContext context)
     {
-        var novoTexto = "Olá {NomeCliente}! 🤖\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
+        var novoTexto = "Olá {NomeCliente}!\n\nIdentificamos uma fatura pendente no valor de *R$ {Valor}* com vencimento em *{Vencimento}*.\n\n*Pagamento via PIX:*\nTitular: {NomeDono}\nChave: {ChavePix}\n\nPor favor, efetue o pagamento para evitar suspensão do serviço.";
         
         var templatePadrao = await context.MensagensTemplate.FirstOrDefaultAsync(t => t.IsPadrao);
 
