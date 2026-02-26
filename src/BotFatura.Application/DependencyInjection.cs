@@ -21,6 +21,10 @@ public static class DependencyInjection
 
         services.AddScoped<IMensagemFormatter, MensagemFormatter>();
         services.AddScoped<IReguaCobrancaService, ReguaCobrancaService>();
+        
+        // Cache Service
+        services.AddMemoryCache();
+        services.AddScoped<ICacheService, CacheService>();
 
         return services;
     }
