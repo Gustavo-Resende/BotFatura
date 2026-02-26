@@ -20,18 +20,39 @@ public class FaturaRepository : Repository<Fatura>, IFaturaRepository
         var hoje = DateTime.UtcNow.Date;
         var pendentesOuEnviadas = new[] { StatusFatura.Pendente, StatusFatura.Enviada };
 
-        return await _dbContext.Faturas
-            .GroupBy(_ => 1)
-            .Select(g => new FaturaDadosConsolidados
-            {
-                TotalPendente = g.Where(f => pendentesOuEnviadas.Contains(f.Status)).Sum(f => f.Valor),
-                TotalVencendoHoje = g.Where(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date == hoje).Sum(f => f.Valor),
-                TotalPago = g.Where(f => f.Status == StatusFatura.Paga).Sum(f => f.Valor),
-                TotalAtrasado = g.Where(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date < hoje).Sum(f => f.Valor),
-                FaturasPendentesCount = g.Count(f => pendentesOuEnviadas.Contains(f.Status)),
-                FaturasAtrasadasCount = g.Count(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date < hoje)
-            })
-            .FirstOrDefaultAsync(cancellationToken) ?? new FaturaDadosConsolidados();
+        var faturas = _dbContext.Faturas.AsNoTracking();
+
+        var totalPendente = await faturas
+            .Where(f => pendentesOuEnviadas.Contains(f.Status))
+            .SumAsync(f => f.Valor, cancellationToken);
+
+        var totalVencendoHoje = await faturas
+            .Where(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date == hoje)
+            .SumAsync(f => f.Valor, cancellationToken);
+
+        var totalPago = await faturas
+            .Where(f => f.Status == StatusFatura.Paga)
+            .SumAsync(f => f.Valor, cancellationToken);
+
+        var totalAtrasado = await faturas
+            .Where(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date < hoje)
+            .SumAsync(f => f.Valor, cancellationToken);
+
+        var faturasPendentesCount = await faturas
+            .CountAsync(f => pendentesOuEnviadas.Contains(f.Status), cancellationToken);
+
+        var faturasAtrasadasCount = await faturas
+            .CountAsync(f => pendentesOuEnviadas.Contains(f.Status) && f.DataVencimento.Date < hoje, cancellationToken);
+
+        return new FaturaDadosConsolidados
+        {
+            TotalPendente = totalPendente,
+            TotalVencendoHoje = totalVencendoHoje,
+            TotalPago = totalPago,
+            TotalAtrasado = totalAtrasado,
+            FaturasPendentesCount = faturasPendentesCount,
+            FaturasAtrasadasCount = faturasAtrasadasCount
+        };
     }
 
     public async Task<decimal> ObterSomaPorStatusAsync(IEnumerable<StatusFatura> status, CancellationToken cancellationToken = default)
@@ -83,9 +104,63 @@ public class FaturaRepository : Repository<Fatura>, IFaturaRepository
 
         return faturasPagas.Select(x => (x.Data, x.Total)).ToList();
     }
+
+    public async Task<List<Application.Dashboard.Queries.ObterClientesAtrasados.ClienteAtrasadoDto>> ObterClientesAtrasadosAsync(CancellationToken cancellationToken = default)
+    {
+        var hoje = DateTime.UtcNow.Date;
+        
+        return await _dbContext.Faturas
+            .AsNoTracking()
+            .Include(f => f.Cliente)
+            .Where(f => f.Status == StatusFatura.Pendente && 
+                       f.DataVencimento.Date < hoje && 
+                       f.Cliente.Ativo)
+            .GroupBy(f => new { f.ClienteId, f.Cliente.NomeCompleto, f.Cliente.WhatsApp })
+            .Select(g => new Application.Dashboard.Queries.ObterClientesAtrasados.ClienteAtrasadoDto
+            {
+                ClienteId = g.Key.ClienteId,
+                Nome = g.Key.NomeCompleto,
+                WhatsApp = g.Key.WhatsApp,
+                FaturasAtrasadas = g.Count(),
+                ValorTotalAtrasado = g.Sum(f => f.Valor)
+            })
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<Application.Faturas.Common.FaturaDto>> ListarFaturasComProjecaoAsync(StatusFatura? status, CancellationToken cancellationToken = default)
+    {
+        var query = _dbContext.Faturas
+            .AsNoTracking()
+            .Include(f => f.Cliente)
+            .AsQueryable();
+
+        if (status.HasValue)
+        {
+            query = query.Where(f => f.Status == status.Value);
+        }
+
+        return await query
+            .OrderByDescending(f => f.DataVencimento)
+            .Select(f => new Application.Faturas.Common.FaturaDto(
+                f.Id,
+                f.ClienteId,
+                f.Cliente != null ? f.Cliente.NomeCompleto : "Cliente não encontrado",
+                f.Valor,
+                f.DataVencimento,
+                f.Status
+            ))
+            .ToListAsync(cancellationToken);
+    }
 }
 
 public class MensagemTemplateRepository : Repository<MensagemTemplate>, IMensagemTemplateRepository
 {
     public MensagemTemplateRepository(AppDbContext dbContext) : base(dbContext) { }
+
+    public async Task<MensagemTemplate?> ObterPorTipoAsync(Domain.Enums.TipoNotificacaoTemplate tipo, CancellationToken cancellationToken = default)
+    {
+        return await _dbContext.MensagensTemplate
+            .AsNoTracking()
+            .FirstOrDefaultAsync(t => t.TipoNotificacao == tipo, cancellationToken);
+    }
 }
