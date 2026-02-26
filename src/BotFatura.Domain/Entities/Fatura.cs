@@ -12,24 +12,28 @@ public class Fatura : Entity
     public DateTime DataVencimento { get; private set; }
     public StatusFatura Status { get; private set; }
 
+    public Guid? ContratoId { get; private set; }
+
     // Controle de Régua de Cobrança
     public bool Lembrete3DiasEnviado { get; private set; }
     public bool CobrancaDiaEnviada { get; private set; }
 
     // Navegação
     public Cliente Cliente { get; private set; } = null!;
+    public Contrato? Contrato { get; private set; }
 
     protected Fatura() { }
 
-    public Fatura(Guid clienteId, decimal valor, DateTime dataVencimento)
+    public Fatura(Guid clienteId, decimal valor, DateTime dataVencimento, Guid? contratoId = null)
     {
-        ClienteId = Guard.Against.Default(clienteId, nameof(clienteId));
-        Valor = Guard.Against.NegativeOrZero(valor, nameof(valor));
+        ClienteId     = Guard.Against.Default(clienteId, nameof(clienteId));
+        Valor         = Guard.Against.NegativeOrZero(valor, nameof(valor));
         DataVencimento = Guard.Against.Default(dataVencimento, nameof(dataVencimento));
-        
+        ContratoId    = contratoId;
+
         Status = StatusFatura.Pendente;
         Lembrete3DiasEnviado = false;
-        CobrancaDiaEnviada = false;
+        CobrancaDiaEnviada   = false;
     }
 
     public Result MarcarComoEnviada()
@@ -59,6 +63,20 @@ public class Fatura : Entity
             return Result.Error("Uma fatura já paga não pode ser cancelada.");
             
         Status = StatusFatura.Cancelada;
+        return Result.Success();
+    }
+
+
+    public Result AtualizarDados(decimal novoValor, DateTime novaDataVencimento)
+    {
+        if (Status == StatusFatura.Paga)
+            return Result.Error("Não é possível editar uma fatura já paga.");
+
+        if (Status == StatusFatura.Cancelada)
+            return Result.Error("Não é possível editar uma fatura cancelada.");
+
+        Valor          = Guard.Against.NegativeOrZero(novoValor, nameof(novoValor));
+        DataVencimento = Guard.Against.Default(novaDataVencimento, nameof(novaDataVencimento));
         return Result.Success();
     }
 
