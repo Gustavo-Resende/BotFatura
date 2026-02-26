@@ -8,8 +8,8 @@ public class FaturasComClientesSpec : Specification<Fatura>
 {
     public FaturasComClientesSpec(StatusFatura? status = null)
     {
-        Query.Include(f => f.Cliente);
-
+        Query.Include(f => f.Cliente)
+             .AsNoTracking();
 
         if (status.HasValue)
         {

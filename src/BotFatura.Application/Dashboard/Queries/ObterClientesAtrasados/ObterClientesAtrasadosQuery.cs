@@ -1,5 +1,6 @@
 using BotFatura.Domain.Enums;
 using BotFatura.Domain.Interfaces;
+using BotFatura.Application.Faturas.Queries;
 using MediatR;
 
 namespace BotFatura.Application.Dashboard.Queries.ObterClientesAtrasados;
@@ -9,18 +10,17 @@ public record ObterClientesAtrasadosQuery : IRequest<IEnumerable<ClienteAtrasado
 public class ObterClientesAtrasadosQueryHandler : IRequestHandler<ObterClientesAtrasadosQuery, IEnumerable<ClienteAtrasadoDto>>
 {
     private readonly IFaturaRepository _faturaRepository;
-    private readonly IClienteRepository _clienteRepository;
 
-    public ObterClientesAtrasadosQueryHandler(IFaturaRepository faturaRepository, IClienteRepository clienteRepository)
+    public ObterClientesAtrasadosQueryHandler(IFaturaRepository faturaRepository)
     {
         _faturaRepository = faturaRepository;
-        _clienteRepository = clienteRepository;
     }
 
     public async Task<IEnumerable<ClienteAtrasadoDto>> Handle(ObterClientesAtrasadosQuery request, CancellationToken cancellationToken)
     {
         var hoje = DateTime.UtcNow.Date;
-        var faturas = await _faturaRepository.ListAsync(cancellationToken);
+        var spec = new FaturasParaNotificarSpec();
+        var faturas = await _faturaRepository.ListAsync(spec, cancellationToken);
         
         var faturasAtrasadas = faturas
             .Where(f => f.Status == StatusFatura.Pendente && f.DataVencimento.Date < hoje)
@@ -31,8 +31,8 @@ public class ObterClientesAtrasadosQueryHandler : IRequestHandler<ObterClientesA
 
         foreach (var grupo in faturasAtrasadas)
         {
-            var cliente = await _clienteRepository.GetByIdAsync(grupo.Key, cancellationToken);
-            if (cliente == null) continue;
+            var cliente = grupo.First().Cliente;
+            if (cliente == null || !cliente.Ativo) continue;
 
             result.Add(new ClienteAtrasadoDto
             {

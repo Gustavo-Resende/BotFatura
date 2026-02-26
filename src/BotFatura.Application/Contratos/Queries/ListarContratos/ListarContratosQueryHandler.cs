@@ -12,6 +12,7 @@ internal sealed class ContratosComClienteSpec : Specification<Contrato>
     public ContratosComClienteSpec(Guid? clienteId)
     {
         Query.Include(c => c.Cliente)
+             .AsNoTracking()
              .OrderByDescending(c => c.Ativo)
              .ThenBy(c => c.DataInicio);
 
