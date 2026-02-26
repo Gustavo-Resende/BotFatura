@@ -72,18 +72,22 @@ public class FaturaReminderWorker : BackgroundService
 
         var reguaService = scope.ServiceProvider.GetRequiredService<IReguaCobrancaService>();
 
-        // Passo 1.1: Obter configuracao global para saber quantos dias antes enviar o lembrete.
+        // Passo 1.1: Obter configuracao global para saber quantos dias antes enviar o lembrete
+        //            e quantos dias após o vencimento enviar a cobrança de atraso.
         var configResult = await mediator.Send(new ObterConfiguracaoQuery(), cancellationToken);
         var diasAntecedenciaLembrete = configResult.Value?.DiasAntecedenciaLembrete > 0
             ? configResult.Value.DiasAntecedenciaLembrete
             : 3;
+        var diasAposVencimentoCobranca = configResult.Value?.DiasAposVencimentoCobranca > 0
+            ? configResult.Value.DiasAposVencimentoCobranca
+            : 7;
 
         // Passo 2: Buscar faturas pendentes ou enviadas usando Specification.
         var spec = new FaturasParaNotificarSpec();
         var faturasAtivas = await faturaRepository.ListAsync(spec, cancellationToken);
 
         // Passo 3: Processar Régua de Cobrança.
-        var itensParaNotificar = reguaService.Processar(faturasAtivas, DateTime.Today, diasAntecedenciaLembrete);
+        var itensParaNotificar = reguaService.Processar(faturasAtivas, DateTime.Today, diasAntecedenciaLembrete, diasAposVencimentoCobranca);
         if (!itensParaNotificar.Any()) return;
 
         // Passo 4: Buscar Template.
@@ -118,8 +122,9 @@ public class FaturaReminderWorker : BackgroundService
 
             if (sendResult.IsSuccess)
             {
-                if (tipoNotificacao == "Lembrete_3_Dias")      fatura.MarcarLembreteEnviado();
-                if (tipoNotificacao == "Cobranca_Vencimento")  fatura.MarcarCobrancaDiaEnviada();
+                if (tipoNotificacao == "Lembrete_3_Dias")           fatura.MarcarLembreteEnviado();
+                if (tipoNotificacao == "Cobranca_Vencimento")       fatura.MarcarCobrancaDiaEnviada();
+                if (tipoNotificacao == "Cobranca_Apos_Vencimento")  fatura.MarcarCobrancaAposVencimentoEnviada();
 
                 fatura.MarcarComoEnviada();
                 await faturaRepository.UpdateAsync(fatura, cancellationToken);
