@@ -25,7 +25,7 @@ public class ReguaCobrancaServiceTests
         };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3, 7).ToList();
 
         // Assert
         resultado.Should().HaveCount(1);
@@ -43,7 +43,7 @@ public class ReguaCobrancaServiceTests
         };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3, 7).ToList();
 
         // Assert
         resultado.Should().HaveCount(1);
@@ -60,7 +60,7 @@ public class ReguaCobrancaServiceTests
         var faturas = new List<Fatura> { fatura };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3, 7).ToList();
 
         // Assert
         resultado.Should().BeEmpty();
@@ -75,7 +75,7 @@ public class ReguaCobrancaServiceTests
         var faturas = new List<Fatura> { fatura };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3, 7).ToList();
 
         // Assert
         resultado.Should().BeEmpty();
@@ -92,7 +92,42 @@ public class ReguaCobrancaServiceTests
         };
 
         // Act
-        var resultado = _service.Processar(faturas, _hoje, 3).ToList();
+        var resultado = _service.Processar(faturas, _hoje, 3, 7).ToList();
+
+        // Assert
+        resultado.Should().BeEmpty();
+    }
+
+    [Fact]
+    public void Processar_DeveRetornarCobrancaAposVencimento_QuandoPassarNDias()
+    {
+        // Arrange
+        var diasAposVencimento = 7;
+        var faturas = new List<Fatura>
+        {
+            new Fatura(Guid.NewGuid(), 100, _hoje.AddDays(-diasAposVencimento))
+        };
+
+        // Act
+        var resultado = _service.Processar(faturas, _hoje, 3, diasAposVencimento).ToList();
+
+        // Assert
+        resultado.Should().HaveCount(1);
+        resultado[0].TipoNotificacao.Should().Be("Cobranca_Apos_Vencimento");
+        resultado[0].Fatura.Should().Be(faturas[0]);
+    }
+
+    [Fact]
+    public void Processar_NaoDeveRetornarCobrancaAposVencimento_SeJaFoiEnviada()
+    {
+        // Arrange
+        var diasAposVencimento = 7;
+        var fatura = new Fatura(Guid.NewGuid(), 100, _hoje.AddDays(-diasAposVencimento));
+        fatura.MarcarCobrancaAposVencimentoEnviada();
+        var faturas = new List<Fatura> { fatura };
+
+        // Act
+        var resultado = _service.Processar(faturas, _hoje, 3, diasAposVencimento).ToList();
 
         // Assert
         resultado.Should().BeEmpty();
