@@ -1,6 +1,7 @@
 using BotFatura.Application.Common.Interfaces;
 using BotFatura.Application.Contratos.Commands.GerarFaturasDoContrato;
 using BotFatura.Application.Faturas.Queries;
+using BotFatura.Application.Configuracoes.Queries.ObterConfiguracao;
 using BotFatura.Domain.Entities;
 using BotFatura.Domain.Enums;
 using BotFatura.Domain.Interfaces;
@@ -71,12 +72,18 @@ public class FaturaReminderWorker : BackgroundService
 
         var reguaService = scope.ServiceProvider.GetRequiredService<IReguaCobrancaService>();
 
+        // Passo 1.1: Obter configuracao global para saber quantos dias antes enviar o lembrete.
+        var configResult = await mediator.Send(new ObterConfiguracaoQuery(), cancellationToken);
+        var diasAntecedenciaLembrete = configResult.Value?.DiasAntecedenciaLembrete > 0
+            ? configResult.Value.DiasAntecedenciaLembrete
+            : 3;
+
         // Passo 2: Buscar faturas pendentes ou enviadas usando Specification.
         var spec = new FaturasParaNotificarSpec();
         var faturasAtivas = await faturaRepository.ListAsync(spec, cancellationToken);
 
         // Passo 3: Processar Régua de Cobrança.
-        var itensParaNotificar = reguaService.Processar(faturasAtivas, DateTime.Today);
+        var itensParaNotificar = reguaService.Processar(faturasAtivas, DateTime.Today, diasAntecedenciaLembrete);
         if (!itensParaNotificar.Any()) return;
 
         // Passo 4: Buscar Template.
