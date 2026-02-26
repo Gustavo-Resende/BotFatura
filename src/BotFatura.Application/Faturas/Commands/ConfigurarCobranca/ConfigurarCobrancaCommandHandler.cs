@@ -1,5 +1,5 @@
 using Ardalis.Result;
-using BotFatura.Domain.Entities;
+using BotFatura.Domain.Factories;
 using BotFatura.Domain.Interfaces;
 using MediatR;
 
@@ -9,11 +9,16 @@ public class ConfigurarCobrancaCommandHandler : IRequestHandler<ConfigurarCobran
 {
     private readonly IFaturaRepository _faturaRepository;
     private readonly IClienteRepository _clienteRepository;
+    private readonly IFaturaFactory _faturaFactory;
 
-    public ConfigurarCobrancaCommandHandler(IFaturaRepository faturaRepository, IClienteRepository clienteRepository)
+    public ConfigurarCobrancaCommandHandler(
+        IFaturaRepository faturaRepository, 
+        IClienteRepository clienteRepository,
+        IFaturaFactory faturaFactory)
     {
         _faturaRepository = faturaRepository;
         _clienteRepository = clienteRepository;
+        _faturaFactory = faturaFactory;
     }
 
     public async Task<Result<Guid>> Handle(ConfigurarCobrancaCommand request, CancellationToken cancellationToken)
@@ -31,11 +36,15 @@ public class ConfigurarCobrancaCommandHandler : IRequestHandler<ConfigurarCobran
             return Result.Error("Não é possível gerar uma fatura para um cliente desativado.");
         }
 
-        // Tenta gerar a entidade Fatura. O FluentValidator já checou se o valor e a data são lógicos.
-        var fatura = new Fatura(request.ClienteId, request.Valor, request.DataVencimento);
+        // Usar Factory Pattern para criar a entidade Fatura
+        var faturaResult = _faturaFactory.Criar(request.ClienteId, request.Valor, request.DataVencimento);
+        if (!faturaResult.IsSuccess)
+        {
+            return Result<Guid>.Error(string.Join(", ", faturaResult.Errors));
+        }
         
-        await _faturaRepository.AddAsync(fatura, cancellationToken);
+        await _faturaRepository.AddAsync(faturaResult.Value, cancellationToken);
         
-        return Result.Success(fatura.Id);
+        return Result.Success(faturaResult.Value.Id);
     }
 }
