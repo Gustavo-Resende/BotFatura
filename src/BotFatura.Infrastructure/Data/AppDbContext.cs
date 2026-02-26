@@ -9,6 +9,7 @@ public class AppDbContext : DbContext
 
     public DbSet<Cliente> Clientes { get; set; }
     public DbSet<Fatura> Faturas { get; set; }
+    public DbSet<Contrato> Contratos { get; set; }
     public DbSet<MensagemTemplate> MensagensTemplate { get; set; }
     public DbSet<Configuracao> Configuracoes { get; set; }
     public DbSet<LogNotificacao> LogsNotificacao { get; set; }
