@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddScoped<IClienteRepository, ClienteRepository>();
         services.AddScoped<IFaturaRepository, FaturaRepository>();
         services.AddScoped<IMensagemTemplateRepository, MensagemTemplateRepository>();
+        services.AddScoped<IContratoRepository, ContratoRepository>();
 
         // Registrando o inicializador do banco
         services.AddScoped<IDbInitializer, DbInitializer>();
