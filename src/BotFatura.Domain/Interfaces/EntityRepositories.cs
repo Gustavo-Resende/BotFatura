@@ -7,6 +7,12 @@ public interface IClienteRepository : IRepository<Cliente>
 {
 }
 
+public interface IContratoRepository : IRepository<Contrato>
+{
+    Task<List<Contrato>> ListarVigentesParaGerarFaturaAsync(DateOnly dataReferencia, CancellationToken cancellationToken = default);
+}
+
+
 public record FaturaDadosConsolidados
 {
     public decimal TotalPendente { get; init; }
