@@ -20,12 +20,13 @@ public class ObterConfiguracaoQueryHandler : IRequestHandler<ObterConfiguracaoQu
         var config = configs.FirstOrDefault();
 
         if (config == null)
-            return Result.Success(new ConfiguracaoDto("", "", 3, 7));
+            return Result.Success(new ConfiguracaoDto("", "", 3, 7, null));
 
         return Result.Success(new ConfiguracaoDto(
             config.ChavePix,
             config.NomeTitularPix,
             config.DiasAntecedenciaLembrete,
-            config.DiasAposVencimentoCobranca));
+            config.DiasAposVencimentoCobranca,
+            config.GrupoSociosWhatsAppId));
     }
 }
