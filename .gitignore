@@ -486,6 +486,8 @@ $RECYCLE.BIN/
 .env.local
 .env.*.local
 appsettings.Local.json
+appsettings.Development.json
+# IMPORTANTE: appsettings.json deve conter apenas PLACEHOLDERs, nunca valores reais de API keys, senhas ou secrets
 
 # Antigravity / Ralph Loop patterns
 .gemini/
