@@ -46,6 +46,12 @@ public static class DependencyInjection
                     TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)) 
                     + TimeSpan.FromMilliseconds(Random.Shared.Next(0, 1000))));
 
+        // Registrando cliente Gemini API
+        services.AddHttpClient<Application.Common.Interfaces.IGeminiApiClient, GeminiApiClient>();
+
+        // Registrando serviços de comprovantes
+        services.AddScoped<Application.Comprovantes.Services.FaturaMatchingService>();
+
         return services;
     }
 }
