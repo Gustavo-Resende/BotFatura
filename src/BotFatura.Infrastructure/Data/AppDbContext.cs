@@ -13,6 +13,7 @@ public class AppDbContext : DbContext
     public DbSet<MensagemTemplate> MensagensTemplate { get; set; }
     public DbSet<Configuracao> Configuracoes { get; set; }
     public DbSet<LogNotificacao> LogsNotificacao { get; set; }
+    public DbSet<LogComprovante> LogsComprovante { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
