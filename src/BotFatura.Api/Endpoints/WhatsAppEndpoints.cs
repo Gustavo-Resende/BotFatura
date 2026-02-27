@@ -26,7 +26,8 @@ public class WhatsAppEndpoints : ICarterModule
             if (statusResult.IsSuccess && statusResult.Value == "INSTANCE_NOT_FOUND")
             {
                 await client.CriarInstanciaAsync();
-                await Task.Delay(2000); 
+                // Aguardar mais tempo para a instância ser criada completamente
+                await Task.Delay(5000); 
                 statusResult = await client.ObterStatusAsync();
             }
 
@@ -35,15 +36,36 @@ public class WhatsAppEndpoints : ICarterModule
                 return Results.Ok(new { status = "connected", message = "WhatsApp já está conectado." });
             }
 
+            // Se estiver em processo de conexão (pairing/connecting), NÃO gerar novo QR Code
+            // Isso evita múltiplas tentativas que podem causar bloqueio
+            if (statusResult.IsSuccess && 
+                (statusResult.Value == "connecting" || 
+                 statusResult.Value == "pairing" ||
+                 statusResult.Value == "close" ||
+                 statusResult.Value?.Contains("qr") == true))
+            {
+                return Results.Ok(new 
+                { 
+                    status = "connecting", 
+                    message = "Aguardando conexão do WhatsApp. Aguarde pelo menos 30 segundos antes de tentar novamente.",
+                    waitBeforeRetry = 30000, // 30 segundos - CRÍTICO para evitar bloqueio
+                    warning = "Não tente escanear múltiplas vezes. Isso pode causar bloqueio do WhatsApp."
+                });
+            }
+
+            // Aguardar antes de gerar QR Code para evitar requisições muito rápidas
+            await Task.Delay(3000);
+
             var qrResult = await client.GerarQrCodeAsync();
             if (qrResult.IsSuccess)
             {
                 return Results.Ok(new 
                 { 
                     status = "awaiting_qrcode", 
-                    message = "QR Code gerado. Escaneie no seu WhatsApp.",
+                    message = "QR Code gerado. Escaneie no seu WhatsApp. Você tem 40 segundos.",
                     qrcodeBase64 = qrResult.Value,
-                    expiresIn = 40 // Evolution API geralmente expira em 40s a 1m
+                    expiresIn = 40,
+                    warning = "Aguarde o QR Code expirar antes de gerar um novo. Múltiplas tentativas podem causar bloqueio."
                 });
             }
 
@@ -66,5 +88,28 @@ public class WhatsAppEndpoints : ICarterModule
             var result = await client.DesconectarAsync();
             return result.IsSuccess ? Results.NoContent() : Results.BadRequest(result.Errors);
         });
+
+        group.MapGet("/grupos", async (IEvolutionApiClient client) =>
+        {
+            // Validar se WhatsApp está conectado antes de listar grupos
+            var statusResult = await client.ObterStatusAsync();
+            if (!statusResult.IsSuccess || statusResult.Value != "open")
+            {
+                return Results.BadRequest(new { 
+                    message = "WhatsApp não está conectado. Conecte o WhatsApp primeiro antes de listar grupos.",
+                    status = statusResult.Value ?? "unknown"
+                });
+            }
+
+            // Aguardar mais tempo para garantir que a conexão está completamente estável
+            // Especialmente importante após uma conexão recente
+            await Task.Delay(2000);
+
+            var result = await client.ListarGruposAsync();
+            return result.IsSuccess 
+                ? Results.Ok(result.Value) 
+                : Results.BadRequest(result.Errors);
+        })
+        .WithSummary("Lista todos os grupos do WhatsApp que o bot participa. Use com moderação para evitar bloqueios.");
     }
 }
