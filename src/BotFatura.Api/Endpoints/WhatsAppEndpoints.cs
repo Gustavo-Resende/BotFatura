@@ -36,23 +36,6 @@ public class WhatsAppEndpoints : ICarterModule
                 return Results.Ok(new { status = "connected", message = "WhatsApp já está conectado." });
             }
 
-            // Se estiver em processo de conexão (pairing/connecting), NÃO gerar novo QR Code
-            // Isso evita múltiplas tentativas que podem causar bloqueio
-            if (statusResult.IsSuccess && 
-                (statusResult.Value == "connecting" || 
-                 statusResult.Value == "pairing" ||
-                 statusResult.Value == "close" ||
-                 statusResult.Value?.Contains("qr") == true))
-            {
-                return Results.Ok(new 
-                { 
-                    status = "connecting", 
-                    message = "Aguardando conexão do WhatsApp. Aguarde pelo menos 30 segundos antes de tentar novamente.",
-                    waitBeforeRetry = 30000, // 30 segundos - CRÍTICO para evitar bloqueio
-                    warning = "Não tente escanear múltiplas vezes. Isso pode causar bloqueio do WhatsApp."
-                });
-            }
-
             // Aguardar antes de gerar QR Code para evitar requisições muito rápidas
             await Task.Delay(3000);
 
