@@ -1,0 +1,32 @@
+FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+
+WORKDIR /src
+
+# Copiar csprojs e arquivos necessários primeiro para otimizar cache
+COPY src/BotFatura.Api/BotFatura.Api.csproj src/BotFatura.Api/
+COPY src/BotFatura.Application/BotFatura.Application.csproj src/BotFatura.Application/
+COPY src/BotFatura.Domain/BotFatura.Domain.csproj src/BotFatura.Domain/
+COPY src/BotFatura.Infrastructure/BotFatura.Infrastructure.csproj src/BotFatura.Infrastructure/
+
+RUN dotnet restore src/BotFatura.Api/BotFatura.Api.csproj
+
+# Copiar restante do código
+COPY src/ ./src/
+
+WORKDIR /src
+
+# Publicar em modo Release
+RUN dotnet publish src/BotFatura.Api/BotFatura.Api.csproj -c Release -o /app/publish
+
+FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS final
+
+WORKDIR /app
+
+COPY --from=build /app/publish .
+
+ENV ASPNETCORE_URLS=http://0.0.0.0:5000
+
+EXPOSE 5000
+
+ENTRYPOINT ["dotnet", "BotFatura.Api.dll"]
+
