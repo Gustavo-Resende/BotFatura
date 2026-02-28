@@ -5,6 +5,11 @@ namespace BotFatura.Domain.Interfaces;
 
 public interface IClienteRepository : IRepository<Cliente>
 {
+    /// <summary>
+    /// Busca um cliente pelo JID do WhatsApp (Evolution API).
+    /// Suporta busca pelo JID completo (ex: "123@lid") ou apenas pelo número base.
+    /// </summary>
+    Task<Cliente?> BuscarPorWhatsAppJidAsync(string jid, CancellationToken cancellationToken = default);
 }
 
 public interface IContratoRepository : IRepository<Contrato>
