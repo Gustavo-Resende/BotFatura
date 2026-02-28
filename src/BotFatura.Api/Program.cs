@@ -1,7 +1,42 @@
 using BotFatura.Application;
+using BotFatura.Application.Common.Interfaces;
+using BotFatura.Api.HealthChecks;
 using BotFatura.Infrastructure;
+using BotFatura.Infrastructure.Data;
 using Carter;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using DotNetEnv;
+
+// Carregar variáveis de ambiente do arquivo .env 
+var currentDir = Directory.GetCurrentDirectory();
+var envPath = string.Empty;
+
+// Procurar o .env subindo os diretórios até encontrar a raiz do projeto
+var searchDir = new DirectoryInfo(currentDir);
+while (searchDir != null && !File.Exists(Path.Combine(searchDir.FullName, "BotFatura.slnx")))
+{
+    searchDir = searchDir.Parent;
+}
+
+if (searchDir != null)
+{
+    envPath = Path.Combine(searchDir.FullName, ".env");
+    if (File.Exists(envPath))
+    {
+        Env.Load(envPath);
+    }
+}
+
+// Fallback: tentar carregar do diretório atual (útil para desenvolvimento)
+if (string.IsNullOrEmpty(envPath) || !File.Exists(envPath))
+{
+    var fallbackPath = Path.Combine(currentDir, ".env");
+    if (File.Exists(fallbackPath))
+    {
+        Env.Load(fallbackPath);
+    }
+}
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -56,6 +91,17 @@ builder.Services.AddScoped<BotFatura.Application.Common.Interfaces.IAuthService,
 
 // Adicionando Carter para Minimal APIs
 builder.Services.AddCarter();
+
+// Adicionando Health Checks
+builder.Services.AddHealthChecks()
+    .AddDbContextCheck<AppDbContext>(
+        name: "postgresql",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "db", "postgresql", "ready" })
+    .AddCheck<EvolutionApiHealthCheck>(
+        name: "evolution-api",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "external", "whatsapp", "ready" });
 
 // Registrando o Background Worker para Faturas
 builder.Services.AddHostedService<BotFatura.Api.Workers.FaturaReminderWorker>();
@@ -114,6 +160,17 @@ app.UseCors("FrontendPolicy");
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+// Health Checks
+app.MapHealthChecks("/health");
+app.MapHealthChecks("/health/ready", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+});
+app.MapHealthChecks("/health/live", new Microsoft.AspNetCore.Diagnostics.HealthChecks.HealthCheckOptions
+{
+    Predicate = _ => false
+});
 
 // Carter Endpoints irão lidar com a autenticação
 
