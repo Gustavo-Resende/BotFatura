@@ -82,38 +82,60 @@ public class FaturaReminderWorker : BackgroundService
             ? configResult.Value.DiasAposVencimentoCobranca
             : 7;
 
-        // Passo 2: Buscar faturas pendentes ou enviadas usando Specification.
-        var spec = new FaturasParaNotificarSpec();
-        var faturasAtivas = await faturaRepository.ListAsync(spec, cancellationToken);
+        // Passo 2: Processar faturas em batches para evitar sobrecarga de memória
+        var dateTimeProvider = scope.ServiceProvider.GetRequiredService<IDateTimeProvider>();
+        const int batchSize = 50;
+        int skip = 0;
+        int totalProcessadas = 0;
 
-        // Passo 3: Processar Régua de Cobrança.
-        var itensParaNotificar = reguaService.Processar(faturasAtivas, DateTime.Today, diasAntecedenciaLembrete, diasAposVencimentoCobranca);
-        if (!itensParaNotificar.Any()) return;
-
-        foreach (var item in itensParaNotificar)
+        while (true)
         {
-            var fatura          = item.Fatura;
-            var tipoNotificacao = item.TipoNotificacao;
+            var specPaginada = new FaturasParaNotificarPaginadaSpec(skip, batchSize);
+            var faturasBatch = await faturaRepository.ListAsync(specPaginada, cancellationToken);
 
-            // Usar Strategy Pattern para mapear tipo de notificação
-            INotificacaoStrategy strategy;
-            try
+            if (!faturasBatch.Any())
+                break;
+
+            // Passo 3: Processar Régua de Cobrança para este batch
+            var itensParaNotificar = reguaService.Processar(faturasBatch, dateTimeProvider.Today, diasAntecedenciaLembrete, diasAposVencimentoCobranca);
+
+            foreach (var item in itensParaNotificar)
             {
-                strategy = NotificacaoStrategyFactory.CriarPorString(tipoNotificacao);
-            }
-            catch (ArgumentException)
-            {
-                _logger.LogWarning($"Tipo de notificação inválido: {tipoNotificacao}. Usando Vencimento como fallback.");
-                strategy = NotificacaoStrategyFactory.Criar(TipoNotificacaoTemplate.Vencimento);
+                var fatura          = item.Fatura;
+                var tipoNotificacao = item.TipoNotificacao;
+
+                // Usar Strategy Pattern para mapear tipo de notificação
+                INotificacaoStrategy strategy;
+                try
+                {
+                    strategy = NotificacaoStrategyFactory.CriarPorString(tipoNotificacao);
+                }
+                catch (ArgumentException)
+                {
+                    _logger.LogWarning($"Tipo de notificação inválido: {tipoNotificacao}. Usando Vencimento como fallback.");
+                    strategy = NotificacaoStrategyFactory.Criar(TipoNotificacaoTemplate.Vencimento);
+                }
+
+                // Usar Template Method Pattern para processar notificação
+                var result = await notificacaoProcessor.ProcessarAsync(fatura, strategy, cancellationToken);
+                
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning($"Erro ao processar notificação para fatura {fatura.Id}: {string.Join(", ", result.Errors)}");
+                }
+                else
+                {
+                    totalProcessadas++;
+                }
             }
 
-            // Usar Template Method Pattern para processar notificação
-            var result = await notificacaoProcessor.ProcessarAsync(fatura, strategy, cancellationToken);
-            
-            if (!result.IsSuccess)
-            {
-                _logger.LogWarning($"Erro ao processar notificação para fatura {fatura.Id}: {string.Join(", ", result.Errors)}");
-            }
+            skip += batchSize;
+
+            // Se retornou menos que o batch size, chegamos ao fim
+            if (faturasBatch.Count < batchSize)
+                break;
         }
+
+        _logger.LogInformation("Processamento da régua de cobrança concluído. {Total} notificação(ões) processada(s).", totalProcessadas);
     }
 }
