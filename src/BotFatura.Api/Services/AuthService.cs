@@ -9,10 +9,12 @@ namespace BotFatura.Api.Services;
 public class AuthService : IAuthService
 {
     private readonly IConfiguration _configuration;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public AuthService(IConfiguration configuration)
+    public AuthService(IConfiguration configuration, IDateTimeProvider dateTimeProvider)
     {
         _configuration = configuration;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public string? Authenticate(string email, string password)
@@ -34,7 +36,7 @@ public class AuthService : IAuthService
                 new Claim(ClaimTypes.Email, email),
                 new Claim(ClaimTypes.Role, "Admin")
             }),
-            Expires = DateTime.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"] ?? "1440")),
+            Expires = _dateTimeProvider.UtcNow.AddMinutes(double.Parse(jwtSettings["ExpiryInMinutes"] ?? "1440")),
             Issuer = jwtSettings["Issuer"],
             Audience = jwtSettings["Audience"],
             SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(secretKey), SecurityAlgorithms.HmacSha256Signature)
