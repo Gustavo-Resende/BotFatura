@@ -1,17 +1,10 @@
+using BotFatura.Application.Common.Interfaces;
 using BotFatura.Domain.Entities;
 using BotFatura.Domain.Enums;
 using BotFatura.Domain.Interfaces;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace BotFatura.Application.Common.Services;
-
-public interface ICacheService
-{
-    Task<MensagemTemplate?> ObterTemplateAsync(TipoNotificacaoTemplate tipo, CancellationToken cancellationToken = default);
-    Task<Configuracao?> ObterConfiguracaoAsync(CancellationToken cancellationToken = default);
-    void InvalidarTemplates();
-    void InvalidarConfiguracao();
-}
 
 public class CacheService : ICacheService
 {
