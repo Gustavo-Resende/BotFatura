@@ -1,4 +1,5 @@
 using Ardalis.Result;
+using BotFatura.Application.Common.Interfaces;
 using BotFatura.Domain.Entities;
 using BotFatura.Domain.Enums;
 using BotFatura.Domain.Interfaces;
@@ -11,22 +12,28 @@ public class GerarFaturasDoContratoCommandHandler : IRequestHandler<GerarFaturas
 {
     private readonly IContratoRepository _contratoRepository;
     private readonly IFaturaRepository _faturaRepository;
+    private readonly IUnitOfWork _unitOfWork;
+    private readonly IDateTimeProvider _dateTimeProvider;
     private readonly ILogger<GerarFaturasDoContratoCommandHandler> _logger;
 
     public GerarFaturasDoContratoCommandHandler(
         IContratoRepository contratoRepository,
         IFaturaRepository   faturaRepository,
+        IUnitOfWork unitOfWork,
+        IDateTimeProvider dateTimeProvider,
         ILogger<GerarFaturasDoContratoCommandHandler> logger)
     {
         _contratoRepository = contratoRepository;
         _faturaRepository   = faturaRepository;
+        _unitOfWork         = unitOfWork;
+        _dateTimeProvider   = dateTimeProvider;
         _logger             = logger;
     }
 
     public async Task<Result> Handle(GerarFaturasDoContratoCommand request, CancellationToken cancellationToken)
     {
         // A data de referência é hoje + 3 dias, gerando a fatura com antecedência para o envio da régua.
-        var dataReferencia = request.DataReferencia ?? DateOnly.FromDateTime(DateTime.UtcNow.AddDays(3));
+        var dataReferencia = request.DataReferencia ?? _dateTimeProvider.TodayDateOnly.AddDays(3);
 
         var contratosVigentes = await _contratoRepository
             .ListarVigentesParaGerarFaturaAsync(dataReferencia, cancellationToken);
@@ -40,43 +47,57 @@ public class GerarFaturasDoContratoCommandHandler : IRequestHandler<GerarFaturas
         var statusAbertos = new[] { StatusFatura.Pendente, StatusFatura.Enviada };
         var faturasGeradas = 0;
 
-        foreach (var contrato in contratosVigentes)
+        try
         {
-            var vencimento = contrato.CalcularVencimentoDoMes(dataReferencia.Year, dataReferencia.Month);
+            await _unitOfWork.BeginTransactionAsync(cancellationToken);
 
-            // Garantia de Idempotência: verifica se já existe fatura deste contrato para o mês/ano de referência.
-            // A query filtra diretamente em memória a partir do navegado (já carregado via Include no repo).
-            var jaExisteFaturaNoMes = contrato.Faturas.Any(f =>
-                f.ContratoId == contrato.Id &&
-                f.DataVencimento.Year  == vencimento.Year &&
-                f.DataVencimento.Month == vencimento.Month);
-
-            if (jaExisteFaturaNoMes)
+            foreach (var contrato in contratosVigentes)
             {
-                _logger.LogDebug(
-                    "Fatura já existente para contrato {ContratoId} no mês {Mes}/{Ano}. Ignorando.",
-                    contrato.Id, vencimento.Month, vencimento.Year);
-                continue;
+                var vencimento = contrato.CalcularVencimentoDoMes(dataReferencia.Year, dataReferencia.Month);
+
+                // Garantia de Idempotência: verifica se já existe fatura deste contrato para o mês/ano de referência.
+                // A query filtra diretamente em memória a partir do navegado (já carregado via Include no repo).
+                var jaExisteFaturaNoMes = contrato.Faturas.Any(f =>
+                    f.ContratoId == contrato.Id &&
+                    f.DataVencimento.Year  == vencimento.Year &&
+                    f.DataVencimento.Month == vencimento.Month);
+
+                if (jaExisteFaturaNoMes)
+                {
+                    _logger.LogDebug(
+                        "Fatura já existente para contrato {ContratoId} no mês {Mes}/{Ano}. Ignorando.",
+                        contrato.Id, vencimento.Month, vencimento.Year);
+                    continue;
+                }
+
+                // Converte DateOnly → DateTime UTC (meia-noite do dia de vencimento).
+                var dataVencimentoUtc = vencimento.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+
+                var fatura = new Fatura(
+                    contrato.ClienteId,
+                    contrato.ValorMensal,
+                    dataVencimentoUtc,
+                    contratoId: contrato.Id);
+
+                await _faturaRepository.AddAsync(fatura, cancellationToken);
+                faturasGeradas++;
+
+                _logger.LogInformation(
+                    "Fatura de R$ {Valor} gerada para contrato {ContratoId} (Cliente: {ClienteId}), vencimento {Vencimento}.",
+                    contrato.ValorMensal, contrato.Id, contrato.ClienteId, vencimento);
             }
 
-            // Converte DateOnly → DateTime UTC (meia-noite do dia de vencimento).
-            var dataVencimentoUtc = vencimento.ToDateTime(TimeOnly.MinValue, DateTimeKind.Utc);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await _unitOfWork.CommitTransactionAsync(cancellationToken);
 
-            var fatura = new Fatura(
-                contrato.ClienteId,
-                contrato.ValorMensal,
-                dataVencimentoUtc,
-                contratoId: contrato.Id);
-
-            await _faturaRepository.AddAsync(fatura, cancellationToken);
-            faturasGeradas++;
-
-            _logger.LogInformation(
-                "Fatura de R$ {Valor} gerada para contrato {ContratoId} (Cliente: {ClienteId}), vencimento {Vencimento}.",
-                contrato.ValorMensal, contrato.Id, contrato.ClienteId, vencimento);
+            _logger.LogInformation("{Quantidade} fatura(s) gerada(s) pelo ciclo de recorrência.", faturasGeradas);
+            return Result.Success();
         }
-
-        _logger.LogInformation("{Quantidade} fatura(s) gerada(s) pelo ciclo de recorrência.", faturasGeradas);
-        return Result.Success();
+        catch (Exception ex)
+        {
+            await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+            _logger.LogError(ex, "Erro ao gerar faturas do contrato. Transação revertida.");
+            return Result.Error($"Erro ao gerar faturas: {ex.Message}");
+        }
     }
 }
