@@ -1,4 +1,5 @@
 using Ardalis.Result;
+using BotFatura.Application.Common.Interfaces;
 using BotFatura.Domain.Interfaces;
 using MediatR;
 
@@ -7,10 +8,12 @@ namespace BotFatura.Application.Templates.Commands.AtualizarTemplate;
 public class AtualizarTemplateCommandHandler : IRequestHandler<AtualizarTemplateCommand, Result>
 {
     private readonly IMensagemTemplateRepository _repository;
+    private readonly ICacheService _cacheService;
 
-    public AtualizarTemplateCommandHandler(IMensagemTemplateRepository repository)
+    public AtualizarTemplateCommandHandler(IMensagemTemplateRepository repository, ICacheService cacheService)
     {
         _repository = repository;
+        _cacheService = cacheService;
     }
 
     public async Task<Result> Handle(AtualizarTemplateCommand request, CancellationToken cancellationToken)
@@ -24,6 +27,10 @@ public class AtualizarTemplateCommandHandler : IRequestHandler<AtualizarTemplate
             return updateResult;
 
         await _repository.UpdateAsync(template, cancellationToken);
+        
+        // Invalidar cache após atualização
+        _cacheService.InvalidarTemplates();
+        
         return Result.Success();
     }
 }

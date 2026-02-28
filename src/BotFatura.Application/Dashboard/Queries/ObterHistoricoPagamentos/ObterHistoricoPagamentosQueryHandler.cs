@@ -1,5 +1,6 @@
 using System.Globalization;
 using Ardalis.Result;
+using BotFatura.Application.Common.Interfaces;
 using BotFatura.Application.Dashboard.Common;
 using BotFatura.Domain.Interfaces;
 using MediatR;
@@ -10,17 +11,19 @@ public class ObterHistoricoPagamentosQueryHandler
     : IRequestHandler<ObterHistoricoPagamentosQuery, Result<List<HistoricoPagamentoDto>>>
 {
     private readonly IFaturaRepository _repository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ObterHistoricoPagamentosQueryHandler(IFaturaRepository repository)
+    public ObterHistoricoPagamentosQueryHandler(IFaturaRepository repository, IDateTimeProvider dateTimeProvider)
     {
         _repository = repository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<List<HistoricoPagamentoDto>>> Handle(ObterHistoricoPagamentosQuery request, CancellationToken cancellationToken)
     {
         DateTime inicio, fim;
 
-        var dataRef = request.Data ?? DateTime.UtcNow;
+        var dataRef = request.Data ?? _dateTimeProvider.UtcNow;
 
         if (request.Tipo == TipoPeriodoChart.MesCompleto)
         {

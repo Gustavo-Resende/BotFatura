@@ -17,6 +17,8 @@ public abstract class NotificacaoProcessorBase
     protected readonly IMensagemFormatter _formatter;
     protected readonly IRepository<LogNotificacao> _logRepository;
     protected readonly ILogNotificacaoFactory _logFactory;
+    protected readonly Domain.Interfaces.IUnitOfWork _unitOfWork;
+    protected readonly ICacheService _cacheService;
 
     protected NotificacaoProcessorBase(
         IFaturaRepository faturaRepository,
@@ -25,7 +27,9 @@ public abstract class NotificacaoProcessorBase
         IEvolutionApiClient evolutionApi,
         IMensagemFormatter formatter,
         IRepository<LogNotificacao> logRepository,
-        ILogNotificacaoFactory logFactory)
+        ILogNotificacaoFactory logFactory,
+        Domain.Interfaces.IUnitOfWork unitOfWork,
+        ICacheService cacheService)
     {
         _faturaRepository = faturaRepository;
         _clienteRepository = clienteRepository;
@@ -34,6 +38,8 @@ public abstract class NotificacaoProcessorBase
         _formatter = formatter;
         _logRepository = logRepository;
         _logFactory = logFactory;
+        _unitOfWork = unitOfWork;
+        _cacheService = cacheService;
     }
 
     // Template Method - define o algoritmo
@@ -62,13 +68,30 @@ public abstract class NotificacaoProcessorBase
         // 5. Enviar mensagem
         var sendResult = await EnviarMensagemAsync(cliente!.WhatsApp, mensagem, cancellationToken);
 
-        // 6. Registrar log
-        await RegistrarLogAsync(fatura, strategy, mensagem, cliente.WhatsApp, sendResult, cancellationToken);
-
-        // 7. Atualizar fatura (se sucesso)
+        // 6. Registrar log e atualizar fatura (com transação)
         if (sendResult.IsSuccess)
         {
-            await AtualizarFaturaAsync(fatura, strategy, cancellationToken);
+            try
+            {
+                await _unitOfWork.BeginTransactionAsync(cancellationToken);
+                
+                await RegistrarLogAsync(fatura, strategy, mensagem, cliente.WhatsApp, sendResult, cancellationToken);
+                await AtualizarFaturaAsync(fatura, strategy, cancellationToken);
+                
+                await _unitOfWork.SaveChangesAsync(cancellationToken);
+                await _unitOfWork.CommitTransactionAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                await _unitOfWork.RollbackTransactionAsync(cancellationToken);
+                return Result.Error($"Erro ao salvar log e atualizar fatura: {ex.Message}");
+            }
+        }
+        else
+        {
+            // Mesmo em caso de falha, registrar o log
+            await RegistrarLogAsync(fatura, strategy, mensagem, cliente.WhatsApp, sendResult, cancellationToken);
+            await _unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
         return sendResult.IsSuccess 

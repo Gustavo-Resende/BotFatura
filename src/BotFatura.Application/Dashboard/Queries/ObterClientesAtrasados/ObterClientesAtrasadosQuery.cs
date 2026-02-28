@@ -1,3 +1,4 @@
+using BotFatura.Application.Common.Interfaces;
 using BotFatura.Domain.Enums;
 using BotFatura.Domain.Interfaces;
 using BotFatura.Application.Faturas.Queries;
@@ -10,15 +11,17 @@ public record ObterClientesAtrasadosQuery : IRequest<IEnumerable<ClienteAtrasado
 public class ObterClientesAtrasadosQueryHandler : IRequestHandler<ObterClientesAtrasadosQuery, IEnumerable<ClienteAtrasadoDto>>
 {
     private readonly IFaturaRepository _faturaRepository;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
-    public ObterClientesAtrasadosQueryHandler(IFaturaRepository faturaRepository)
+    public ObterClientesAtrasadosQueryHandler(IFaturaRepository faturaRepository, IDateTimeProvider dateTimeProvider)
     {
         _faturaRepository = faturaRepository;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<IEnumerable<ClienteAtrasadoDto>> Handle(ObterClientesAtrasadosQuery request, CancellationToken cancellationToken)
     {
-        var hoje = DateTime.UtcNow.Date;
+        var hoje = _dateTimeProvider.Today;
         var spec = new FaturasParaNotificarSpec();
         var faturas = await _faturaRepository.ListAsync(spec, cancellationToken);
         

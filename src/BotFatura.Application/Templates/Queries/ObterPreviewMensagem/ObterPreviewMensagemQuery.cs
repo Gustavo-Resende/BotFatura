@@ -12,15 +12,18 @@ public class ObterPreviewMensagemQueryHandler : IRequestHandler<ObterPreviewMens
     private readonly IClienteRepository _clienteRepository;
     private readonly IMensagemTemplateRepository _templateRepository;
     private readonly IMensagemFormatter _formatter;
+    private readonly IDateTimeProvider _dateTimeProvider;
 
     public ObterPreviewMensagemQueryHandler(
         IClienteRepository clienteRepository, 
         IMensagemTemplateRepository templateRepository,
-        IMensagemFormatter formatter)
+        IMensagemFormatter formatter,
+        IDateTimeProvider dateTimeProvider)
     {
         _clienteRepository = clienteRepository;
         _templateRepository = templateRepository;
         _formatter = formatter;
+        _dateTimeProvider = dateTimeProvider;
     }
 
     public async Task<Result<string>> Handle(ObterPreviewMensagemQuery request, CancellationToken cancellationToken)
@@ -38,7 +41,7 @@ public class ObterPreviewMensagemQueryHandler : IRequestHandler<ObterPreviewMens
         }
 
         // Fatura fake para o preview
-        var faturaFake = new BotFatura.Domain.Entities.Fatura(cliente.Id, 150.00m, DateTime.UtcNow.AddDays(5));
+        var faturaFake = new BotFatura.Domain.Entities.Fatura(cliente.Id, 150.00m, _dateTimeProvider.UtcNow.AddDays(5));
 
         string mensagem = await _formatter.FormatarMensagemAsync(textoBase, cliente, faturaFake, cancellationToken);
 

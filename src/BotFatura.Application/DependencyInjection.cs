@@ -22,6 +22,9 @@ public static class DependencyInjection
         services.AddScoped<IMensagemFormatter, MensagemFormatter>();
         services.AddScoped<IReguaCobrancaService, ReguaCobrancaService>();
         
+        // DateTime Provider
+        services.AddScoped<IDateTimeProvider, DateTimeProvider>();
+        
         // Cache Service
         services.AddMemoryCache();
         services.AddScoped<ICacheService, CacheService>();
