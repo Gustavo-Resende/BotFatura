@@ -50,7 +50,7 @@ public static class DependencyInjection
         services.AddHttpClient<Application.Common.Interfaces.IGeminiApiClient, GeminiApiClient>();
 
         // Registrando serviços de comprovantes
-        services.AddScoped<Application.Comprovantes.Services.FaturaMatchingService>();
+        services.AddScoped<Application.Comprovantes.Services.ComprovanteValidationService>();
 
         return services;
     }
