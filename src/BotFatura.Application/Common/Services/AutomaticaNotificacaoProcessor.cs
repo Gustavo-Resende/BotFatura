@@ -8,8 +8,6 @@ namespace BotFatura.Application.Common.Services;
 
 public class AutomaticaNotificacaoProcessor : NotificacaoProcessorBase
 {
-    private readonly Random _random;
-
     public AutomaticaNotificacaoProcessor(
         IFaturaRepository faturaRepository,
         IClienteRepository clienteRepository,
@@ -17,10 +15,11 @@ public class AutomaticaNotificacaoProcessor : NotificacaoProcessorBase
         IEvolutionApiClient evolutionApi,
         IMensagemFormatter formatter,
         IRepository<LogNotificacao> logRepository,
-        Domain.Factories.ILogNotificacaoFactory logFactory)
-        : base(faturaRepository, clienteRepository, templateRepository, evolutionApi, formatter, logRepository, logFactory)
+        Domain.Factories.ILogNotificacaoFactory logFactory,
+        Domain.Interfaces.IUnitOfWork unitOfWork,
+        ICacheService cacheService)
+        : base(faturaRepository, clienteRepository, templateRepository, evolutionApi, formatter, logRepository, logFactory, unitOfWork, cacheService)
     {
-        _random = new Random();
     }
 
     protected override async Task<Result> ValidarPreCondicoesAsync(Fatura fatura, CancellationToken cancellationToken)
@@ -34,13 +33,13 @@ public class AutomaticaNotificacaoProcessor : NotificacaoProcessorBase
 
     protected override async Task<MensagemTemplate?> ObterTemplateAsync(INotificacaoStrategy strategy, CancellationToken cancellationToken)
     {
-        return await _templateRepository.ObterPorTipoAsync(strategy.ObterTipoNotificacaoTemplate(), cancellationToken);
+        return await _cacheService.ObterTemplateAsync(strategy.ObterTipoNotificacaoTemplate(), cancellationToken);
     }
 
     protected override async Task AplicarDelayAsync(CancellationToken cancellationToken)
     {
         // Delay anti-ban para notificações automáticas (5-15 segundos)
-        var delay = _random.Next(5000, 15000);
+        var delay = Random.Shared.Next(5000, 15000);
         await Task.Delay(delay, cancellationToken);
     }
 }

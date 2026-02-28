@@ -8,8 +8,6 @@ namespace BotFatura.Application.Common.Services;
 
 public class ManualNotificacaoProcessor : NotificacaoProcessorBase
 {
-    private readonly Random _random;
-
     public ManualNotificacaoProcessor(
         IFaturaRepository faturaRepository,
         IClienteRepository clienteRepository,
@@ -17,10 +15,11 @@ public class ManualNotificacaoProcessor : NotificacaoProcessorBase
         IEvolutionApiClient evolutionApi,
         IMensagemFormatter formatter,
         IRepository<LogNotificacao> logRepository,
-        Domain.Factories.ILogNotificacaoFactory logFactory)
-        : base(faturaRepository, clienteRepository, templateRepository, evolutionApi, formatter, logRepository, logFactory)
+        Domain.Factories.ILogNotificacaoFactory logFactory,
+        Domain.Interfaces.IUnitOfWork unitOfWork,
+        ICacheService cacheService)
+        : base(faturaRepository, clienteRepository, templateRepository, evolutionApi, formatter, logRepository, logFactory, unitOfWork, cacheService)
     {
-        _random = new Random();
     }
 
     protected override async Task<Result> ValidarPreCondicoesAsync(Fatura fatura, CancellationToken cancellationToken)
@@ -72,7 +71,7 @@ public class ManualNotificacaoProcessor : NotificacaoProcessorBase
     protected override async Task AplicarDelayAsync(CancellationToken cancellationToken)
     {
         // Delay menor para envio manual (5-10 segundos)
-        var delay = _random.Next(5000, 10000);
+        var delay = Random.Shared.Next(5000, 10000);
         await Task.Delay(delay, cancellationToken);
     }
 }
