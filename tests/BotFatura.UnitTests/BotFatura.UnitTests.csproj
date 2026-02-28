@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\BotFatura.Domain\BotFatura.Domain.csproj" />
     <ProjectReference Include="..\..\src\BotFatura.Application\BotFatura.Application.csproj" />
     <ProjectReference Include="..\..\src\BotFatura.Infrastructure\BotFatura.Infrastructure.csproj" />
+    <ProjectReference Include="..\BotFatura.TestUtils\BotFatura.TestUtils.csproj" />
   </ItemGroup>
 
 </Project>
