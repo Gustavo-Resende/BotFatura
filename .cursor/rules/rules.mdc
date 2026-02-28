@@ -1,0 +1,40 @@
+---
+description: Regras de arquitetura, padrões de código e visão de negócio para o projeto BotFatura
+globs: **/*.cs, **/*.json
+---
+
+# BotFatura - Diretrizes Oficiais
+
+## 🎯 Objetivo e Fluxo
+Sistema de baixa automática de faturas via WhatsApp.
+1. Recebe comprovante (PDF/Imagem) -> Evolution API.
+2. Gemini extrai dados -> Valida pagador, valor (tolerância R$0,01) e destino.
+3. [Sucesso]: Baixa fatura, avisa cliente e sócios.
+4. [Falha]: Notifica erro ao cliente.
+
+## 🏗️ Arquitetura e Tech Stack
+- **Padrão:** Clean Architecture + CQRS + DDD.
+- **Camadas:**
+  - **Domain:** Entidades ricas, Logic Core, GuardClauses, sem setters públicos.
+  - **Application:** Casos de uso (MediatR), Commands/Queries separados, FluentValidation.
+  - **Infrastructure:** EF Core (EntityTypeConfiguration), integrações externas.
+  - **Presentation:** Minimal APIs apenas.
+- **Async:** Obrigatório `Async` no sufixo e `CancellationToken` em toda a cadeia.
+
+## 🇧🇷 Regras de Nomenclatura (OBRIGATÓRIO)
+- **Idioma:** TODO o código (variáveis, classes, métodos, propriedades) deve ser em **Português Brasileiro**.
+- **Exceções:** Termos técnicos (Id, JID, Async, HTTP, JSON).
+- **Proibido:** Abreviações (vlr, cli) ou termos em inglês (Customer, Invoice).
+- **Correto:** `clienteId`, `valorFatura`, `processarPagamentoAsync`.
+
+## 🛠️ Padrões de Implementação
+- **Result Pattern:** Use `Result<T>` para retornos de serviço; nunca lance exceções para fluxo de negócio.
+- **Logs:** Use `ILogger<T>` com logs estruturados (entrada/saída de APIs externas).
+- **Testes:** Unitários (xUnit + FluentAssertions + NSubstitute). Nome: `Metodo_Cenario_Resultado`.
+- **Injeção de Dependência:** Sempre via construtor.
+- **Terminal:** Use estritamente **PowerShell**.
+
+## ⚠️ Restrições
+- Não use Data Annotations em entidades (use Fluent API no Infra).
+- Não use lógica de negócio em Controllers/Minimal APIs.
+- Jamais exponha Stack Trace em respostas (use ProblemDetails).
