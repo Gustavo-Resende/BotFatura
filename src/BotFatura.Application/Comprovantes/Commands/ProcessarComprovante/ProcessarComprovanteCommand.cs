@@ -8,6 +8,7 @@ public record ProcessarComprovanteCommand(
     byte[] Arquivo,
     string MimeType,
     string NumeroWhatsApp,
+    string JidOriginal, // JID completo do WhatsApp (ex: 123@lid ou 123@s.whatsapp.net)
     DateTime DataEnvioMensagemFatura
 ) : IRequest<Result<ProcessarComprovanteResult>>;
 
